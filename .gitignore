@@ -47,6 +47,7 @@ frontend/dist/
 .settings/
 *.sublime-workspace
 *.sublime-project
+*.code-workspace
 
 # SDK / wheel files
 *.whl

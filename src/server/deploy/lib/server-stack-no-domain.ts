@@ -2,20 +2,17 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import * as targets from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
 
-export class ServerStack extends cdk.Stack {
+export class ServerStackNoDomain extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // IP address for whitelisting.
     const myIp = process.env.MY_IP!;
-
-    // Domain name for SSL certificate (required for SSL)
-    const domainName = process.env.SERVER_URL!;
-    if (!domainName) {
-      throw new Error("SERVER_URL environment variable is required for SSL");
+    const keyPairName = "novasonic-kp";
+    if (!myIp || !keyPairName) {
+      throw new Error("MY_IP y EC2_KEY_PAIR_NAME son requeridos");
     }
 
     const vpc = new ec2.Vpc(this, "Vpc", {
@@ -31,24 +28,19 @@ export class ServerStack extends cdk.Stack {
 
     const securityGroup = new ec2.SecurityGroup(this, "SecurityGroup", {
       vpc,
-      description: "Allow SSH and application traffic",
+      description: "Allow SSH and HTTP traffic",
       allowAllOutbound: true,
     });
 
     securityGroup.addIngressRule(
-      ec2.Peer.ipv4(myIp),
+      ec2.Peer.ipv4(`${myIp}/32`),
       ec2.Port.tcp(22),
       "Allow SSH access from my IP"
     );
     securityGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(443),
-      "Allow HTTPS access from anywhere"
-    );
-    securityGroup.addIngressRule(
-      ec2.Peer.ipv4(myIp),
-      ec2.Port.tcp(3001),
-      "Allow application port access from my IP for testing"
+      ec2.Port.tcp(80),
+      "Allow HTTP access from anywhere"
     );
 
     const role = new iam.Role(this, "InstanceRole", {
@@ -59,6 +51,7 @@ export class ServerStack extends cdk.Stack {
         ),
       ],
     });
+
     role.addToPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -68,9 +61,10 @@ export class ServerStack extends cdk.Stack {
     );
 
     const keyPair = ec2.KeyPair.fromKeyPairAttributes(this, "KeyPair", {
-      keyPairName: process.env.EC2_KEY_PAIR_NAME!,
+      keyPairName,
       type: ec2.KeyPairType.RSA,
     });
+
     const instance = new ec2.Instance(this, "Instance", {
       vpc,
       instanceType: ec2.InstanceType.of(
@@ -81,54 +75,38 @@ export class ServerStack extends cdk.Stack {
       securityGroup,
       role,
       keyPair,
-      vpcSubnets: {
-        subnetType: ec2.SubnetType.PUBLIC,
-      },
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
     });
 
     const alb = new elbv2.ApplicationLoadBalancer(this, "Alb", {
       vpc,
       internetFacing: true,
       securityGroup,
-      vpcSubnets: {
-        subnetType: ec2.SubnetType.PUBLIC,
+    });
+
+    const frontendTG = new elbv2.ApplicationTargetGroup(this, "FrontendTG", {
+      vpc,
+      port: 3000,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      targets: [new targets.InstanceTarget(instance, 3000)],
+      healthCheck: {
+        path: "/",
+        healthyHttpCodes: "200",
       },
     });
 
-    const sslCertificate = new acm.Certificate(this, "Certificate", {
-      domainName,
-      validation: acm.CertificateValidation.fromDns(),
-    });
-    const httpsListener = alb.addListener("HttpsListener", {
-      port: 443,
-      certificates: [sslCertificate],
-      protocol: elbv2.ApplicationProtocol.HTTPS,
-      open: true,
-    });
-
-    // Add target group for the instance
-    const targetGroup = new elbv2.ApplicationTargetGroup(
-      this,
-      "TargetGroup",
-      {
-        vpc,
-        port: 3001,
-        protocol: elbv2.ApplicationProtocol.HTTP,
-        // targets: [new targets.InstanceTarget(instance)],
-        healthCheck: {
-          path: "/",
-          healthyHttpCodes: "200",
-          interval: cdk.Duration.seconds(30),
-        },
-      }
-    );
-
-    httpsListener.addTargetGroups("HttpsTarget", {
-      targetGroups: [targetGroup],
+    const backendTG = new elbv2.ApplicationTargetGroup(this, "BackendTG", {
+      vpc,
+      port: 3001,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      targets: [new targets.InstanceTarget(instance, 3001)],
+      healthCheck: {
+        path: "/health",
+        healthyHttpCodes: "200",
+      },
     });
 
-    // Redirect HTTP to HTTPS
-    alb.addListener("HttpListener", {
+    const httpListener = alb.addListener("HttpListener", {
       port: 80,
       protocol: elbv2.ApplicationProtocol.HTTP,
       open: true,
@@ -139,13 +117,28 @@ export class ServerStack extends cdk.Stack {
       }),
     });
 
+    httpListener.addAction("FrontendRoute", {
+      priority: 1,
+      conditions: [
+        elbv2.ListenerCondition.pathPatterns(["/", "/index.html", "/app*"]),
+      ],
+      action: elbv2.ListenerAction.forward([frontendTG]),
+    });
+
+    httpListener.addAction("BackendRoute", {
+      priority: 2,
+      conditions: [elbv2.ListenerCondition.pathPatterns(["/api/*"])],
+      action: elbv2.ListenerAction.forward([backendTG]),
+    });
+
     new cdk.CfnOutput(this, "InstancePublicIp", {
       value: instance.instancePublicIp,
-      description: "Public IP address of the EC2 instance",
+      description: "Public IP of EC2",
     });
-    new cdk.CfnOutput(this, "ALBDnsName", {
+
+    new cdk.CfnOutput(this, "AlbDns", {
       value: alb.loadBalancerDnsName,
-      description: "DNS name of the Application Load Balancer",
+      description: "Public DNS of ALB",
     });
   }
 }

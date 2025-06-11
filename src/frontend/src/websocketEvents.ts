@@ -121,12 +121,18 @@ export class WebSocketEventManager {
       audioPlayer.start();
     };
 
-    this.socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        this.handleMessage(data);
-      } catch (e) {
-        console.error("Error parsing message:", e, "Raw data:", event.data);
+    this.socket.onmessage = async (event) => {
+      if (typeof event.data === "string") {
+        try {
+          const data = JSON.parse(event.data);
+          this.handleMessage(data);
+        } catch (e) {
+          console.error("Error parsing JSON message:", e, event.data);
+        }
+      } else {
+        // Es binario (Blob o ArrayBuffer)
+        console.warn("Binary message received, skipping JSON parse.");
+        // Si esperás audio o algo binario, lo podrías procesar acá
       }
     };
 
@@ -186,7 +192,7 @@ export class WebSocketEventManager {
         const content = event.audioInput.content;
         if (audioInput.role === "USER" && !this.seenChunks.has(content)) {
           this.sendAudioChunk(content);
-          this.seenChunks.add(content)
+          this.seenChunks.add(content);
         }
       } else if (event.contentStart) {
         console.log("Content start received:", event.contentStart.type);
@@ -208,7 +214,7 @@ export class WebSocketEventManager {
         let content = event.textOutput.content;
 
         if (role === "ASSISTANT" && content.startsWith("Speculative: ")) {
-          content = content.slice(13)
+          content = content.slice(13);
         }
 
         if (this.seenChunks.has(content)) return;
@@ -255,7 +261,7 @@ export class WebSocketEventManager {
         } else if (contentType === "AUDIO") {
           this.handleAudioContentEnd();
         } else if (contentType === "SILENT_AUDIO") {
-          this.stopUserTalking()
+          this.stopUserTalking();
         }
       } else if (event.toolUse) {
         console.log("Tool use event received:", event.toolUse.toolName);

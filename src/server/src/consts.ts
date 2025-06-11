@@ -26,6 +26,6 @@ export const DefaultSystemPrompt =
 
 export const DefaultAudioOutputConfiguration = {
   ...DefaultAudioInputConfiguration,
-  sampleRateHertz: 16000, // TODO: You may need to adjust this for your voice to sound normal
-  voiceId: "tiffany",
+  sampleRateHertz: 24000, // TODO: You may need to adjust this for your voice to sound normal
+  voiceId: "matthew",
 };

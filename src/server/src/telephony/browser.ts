@@ -1,4 +1,5 @@
 import { Session } from "../types";
+import WebSocket from "ws"
 
 export class BrowserIntegration {
   isOn: boolean;
