@@ -24,7 +24,7 @@ function initializeBedrockClient() {
 async function analyzeSentiment(message) {
   try {
     const client = initializeBedrockClient();
-    console.log("client", client)
+    console.log("client", client);
 
     const command = new ConverseCommand({
       modelId: "amazon.nova-lite-v1:0",
@@ -40,7 +40,7 @@ async function analyzeSentiment(message) {
       ],
     });
     const response = await client.send(command);
-    console.debug("Bedrock sentiment response:", response)
+    console.debug("Bedrock sentiment response:", response);
 
     // Extract the sentiment score from the response
     const sentimentText = response.output.message.content[0].text.trim();
@@ -81,25 +81,25 @@ async function generateInsight(history) {
           role: "user",
           content: [
             {
-              text: `Your job is to analyze the agent's conversation to this point and provide actionable feedback for how they can better assist their customer. Based on this conversation, provide a single, brief insight about customer sentiment, needs, or interaction quality. You should phrase these as suggestions for the agent.
+              text: `Tu trabajo es analizar la conversación del agente hasta este punto y proporcionar retroalimentación accionable sobre cómo puede asistir mejor a su cliente. Basado en esta conversación, proporciona una sola idea breve sobre el sentimiento del cliente, sus necesidades o la calidad de la interacción. Debes redactar estas sugerencias como recomendaciones para el agente.
 
-              Telecom Company Policy Guidelines:
-              - If the customer asks questions unrelated to our telecom services or products, politely redirect them to relevant topics.
-              - For off-topic personal questions, agents should respond with "I'd be happy to help with questions about our telecom services, plans, or technical support" before refocusing the conversation.
-              - Never engage with politically divisive topics, instead say "I understand your interest, but let's focus on how I can assist with your mobile/internet/TV service needs today."
-              - For inappropriate requests, kindly decline and offer appropriate telecom assistance alternatives.
-              - For questions about competitors' services, acknowledge their question but refocus on our company's offerings without disparaging competitors.
+          Guías de Política de la Compañía de Telecomunicaciones:
+          - Si el cliente hace preguntas no relacionadas con nuestros servicios o productos de telecomunicaciones, redirígelo amablemente a temas relevantes.
+          - Para preguntas personales fuera de tema, los agentes deben responder: "Con gusto te ayudo con preguntas sobre nuestros servicios de telecomunicaciones, planes o soporte técnico" antes de reenfocar la conversación.
+          - Nunca participes en temas políticamente divisivos, en su lugar di: "Entiendo tu interés, pero enfoquémonos en cómo puedo ayudarte con tus necesidades de servicio móvil/internet/TV hoy."
+          - Para solicitudes inapropiadas, rechaza amablemente y ofrece alternativas de asistencia relacionadas con telecomunicaciones.
+          - Para preguntas sobre servicios de la competencia, reconoce la pregunta pero reenfoca en las ofertas de nuestra compañía sin desacreditar a los competidores.
 
-              Return only the insight with no explanations or context. Do not generate anything other than the insight/tip.
+          Devuelve solo la idea/sugerencia sin explicaciones ni contexto. No generes nada más que la idea/sugerencia.
 
-              Example insights:
-              - "The customer seems frustrated about slow internet speeds. Consider offering a speed test and troubleshooting steps."
-              - "When the customer asked about political news, you could have redirected more smoothly by acknowledging then refocusing on their account needs."
-              - "The customer appears confused about our data plan structure. Consider sharing a simple breakdown of our tiered options."
-              - "Consider proactively offering information about our network coverage in the customer's area based on their concerns."
+          Ejemplos de ideas:
+          - "El cliente parece frustrado por la baja velocidad de internet. Considera ofrecer una prueba de velocidad y pasos de solución de problemas."
+          - "Cuando el cliente preguntó sobre noticias políticas, podrías haber redirigido de manera más fluida reconociendo y luego reenfocando en sus necesidades de cuenta."
+          - "El cliente parece confundido sobre la estructura de nuestros planes de datos. Considera compartir un desglose sencillo de nuestras opciones por niveles."
+          - "Considera ofrecer proactivamente información sobre la cobertura de nuestra red en el área del cliente según sus inquietudes."
 
-              Conversation:
-              ${formattedHistory}`,
+          Conversación:
+          ${formattedHistory}`,
             },
           ],
         },
