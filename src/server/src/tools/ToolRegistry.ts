@@ -3,6 +3,58 @@ import { DOMParser } from "xmldom";
 import { synthesizeSpeech } from "../tts";
 import { NovaSonicBidirectionalStreamClient } from "../client";
 import { WebSocket } from "ws";
+import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
+
+const fetchTecoFlowScriptData = async (
+  sessionId: string,
+  caseId: string,
+  processName: string,
+  processArguments: Map<string, string | number>
+): Promise<Record<string, any>> => {
+  const lambdaClient = new LambdaClient({
+    region: process.env.AWS_REGION || "us-east-1",
+  });
+
+  try {
+    const payload = {
+      session_id: sessionId,
+      case_id: caseId,
+      next_process: {
+        name: processName,
+        arguments: processArguments,
+      },
+    };
+
+    console.log(
+      "fetchTecoFlowScriptData:----------------------------------",
+      payload
+    );
+
+    const command = new InvokeCommand({
+      FunctionName: "TecoFlowScript", // Replace with your Lambda function name
+      Payload: Buffer.from(JSON.stringify(payload)),
+    });
+
+    const response = await lambdaClient.send(command);
+
+    console.log(
+      "response fetchTecoFlowScriptData:-------------------------------",
+      response
+    );
+
+    let result;
+    if (response.Payload) {
+      result = JSON.parse(Buffer.from(response.Payload).toString());
+    } else {
+      result = { error: "No payload returned from Lambda" };
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error invoking Lambda:", error);
+    throw error;
+  }
+};
 
 function startAudioContent(
   ws: WebSocket,
@@ -102,6 +154,59 @@ async function triggerSonic(
 }
 
 const functions = {
+  follow_script: async (
+    client: NovaSonicBidirectionalStreamClient,
+    ws: WebSocket,
+    toolUseContent: any,
+    messagesList: string[]
+  ) => {
+    console.log("########################################################");
+    console.log("toolUseContent:", toolUseContent.content);
+    console.log(
+      "Type of toolUseContent.content:",
+      typeof toolUseContent.content
+    );
+    const contentObj =
+      typeof toolUseContent.content === "string"
+        ? JSON.parse(toolUseContent.content)
+        : toolUseContent.content;
+    console.log("Parsed:", contentObj);
+
+    const sessionId = contentObj.session_id;
+    const caseId = contentObj.case_id;
+    const processName = contentObj.name;
+    const processArguments = contentObj.arguments || {};
+
+    // const { sessionId, caseId, processName, processArguments } = contentObj;
+
+    console.log("-----------> follow_script called with:", {
+      sessionId: sessionId,
+      caseId: caseId,
+      processName: processName,
+      processArguments: processArguments,
+    });
+    try {
+      const result = await fetchTecoFlowScriptData(
+        sessionId,
+        caseId,
+        processName,
+        processArguments
+      );
+      console.log("-----------> Result from TecoFlowScript:", result);
+
+      if (result.error) {
+        return { content: `Error: ${result.error}` };
+      }
+
+      // messagesList.push(`The next step in your process is: ${result.next_process.name}`);
+      // return { content: `The next step in your process is: ${result.next_process.name}` };
+      console.log("########################################################");
+      return result;
+    } catch (error) {
+      console.error("Error in follow_script:", error);
+      return { content: "An error occurred while processing your request." };
+    }
+  },
   check_messages: async (
     client: NovaSonicBidirectionalStreamClient,
     ws: WebSocket,
@@ -266,14 +371,15 @@ function parseToolsFromXML(
 
 export const registeredTools = parseToolsFromXML(
   `
-<tool id="check_messages" function="check_messages" description="Use this tool to check if there's a connection issue in the user's area. Do not assume how many devices are affected without asking."/>
-<tool id="check_connection" function="check_connection" description="Use this tool to check if there's a connection issue in the user's area. Do not assume how many devices are affected without asking."/>
-<tool id="check_for_outage" function="check_for_outage" description="Use this tool to check if there's an outage in the user's area. Do not assume how many devices are affected without asking.">
-  <property name="affectsAllUserDevices" type="boolean" required="true" description="Whether the outage affects all user devices" />
-</tool>
 <tool id="get_weather" function="get_weather" description="Get the current weather for a given location, based on its WGS84 coordinates.">
   <property name="latitude" type="string" required="true" description="Geographical WGS84 latitude of the location." />
   <property name="longitude" type="string" required="true" description="Geographical WGS84 longitude of the location." />
+</tool>
+<tool id="follow_script" function="follow_script" description="Obtener el siguiente paso de un proceso estructurado para diagnosticar y resolver problemas de conexión a internet de manera eficiente.">
+  <property name="session_id" type="string" required="true" description="The session ID for the process." />
+  <property name="case_id" type="string" required="true" description="The case ID for the process." />
+  <property name="name" type="string" required="true" description="The name of the next process to follow." />
+  <property name="arguments" type="object" required="true" description="Arguments for the next process." />
 </tool>
 `,
   functions
