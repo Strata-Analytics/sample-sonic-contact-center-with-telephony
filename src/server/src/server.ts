@@ -218,15 +218,15 @@ wsInstance.app.ws("/socket", (ws: WebSocket, req: Request) => {
         //   `
         // );
 
-        const CONVERSATION_SESSION_ID = "Sonic02";
-        const CONVERSATION_CASE_ID = "02";
+        // const CONVERSATION_SESSION_ID = "Sonic02";
+        // const CONVERSATION_CASE_ID = "02";
 
         await session.setupSystemPrompt(
           undefined,
           `Eres un agente de una compañía telefónica. El cliente te hablará ` +
             `por problemas en su connección a internet que tu compañía telefónica brinda.  ` +
             `Responde de manera corta y concisa, generalmente entre 2 o 3 frases ya que tu conversación con el cliente debe ser fluida. ` +
-            `Estas son las variables que mantendrás para toda la conversación con el cliente: 'session_id': '${CONVERSATION_SESSION_ID}', 'case_id': '${CONVERSATION_CASE_ID}'. \n` +
+            // `Estas son las variables que mantendrás para toda la conversación con el cliente: 'session_id': '${CONVERSATION_SESSION_ID}', 'case_id': '${CONVERSATION_CASE_ID}'. \n` +
             `Despues de saludar al cliente, la primera accion que tienes que hacer es usar la tool 'follow_script' para correr un proceso con 'name': 'VerificarOutageBloqueante' y 'arguments': '{}'. ` +
             `Esta herramienta permite seguir un proceso estructurado para diagnosticar y resolver problemas de conexión a internet de manera eficiente. ` +
             // `Usa la respuesta de la tool, lo que esta en 'prompt' para dar al cliente más información sobre que tienes que hacer para solucionar el problema con la conexion a internet. ` +
