@@ -12,12 +12,16 @@ import { synthesizeSpeech } from "./tts";
 import Chart from "chart.js/auto";
 import "./App.css";
 
+const USER = "strata";
+const PASS = "strata";
+
 let wsManager: WebSocketEventManager | null = null;
 let sessionTimer: number | null = null;
 
 // .env settings
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || "localhost:3001";
-const WS_URL = `wss://${SERVER_URL}/socket`;
+const SOCKET_PROTOCOL = SERVER_URL.startsWith("locahost") ? "ws" : "wss";
+const WS_URL = `${SOCKET_PROTOCOL}://${SERVER_URL}/socket`;
 const MICROPHONE_IS_MUTED =
   import.meta.env.VITE_MICROPHONE_IS_MUTED?.toLowerCase() === "true";
 
@@ -32,6 +36,31 @@ const SILENCE_DURATION = 1000;
 const MIN_SPEECH_SAMPLES = 5;
 
 const App: React.FC = () => {
+  const [authorized, setAuthorized] = useState(!!localStorage.getItem("auth-ok"));
+  console.log("authorized", authorized);
+  useEffect(() => {
+    const isAuthorized = localStorage.getItem("auth-ok");
+    if (isAuthorized === "true") {
+      setAuthorized(true);
+    } else {
+      const user = prompt("Usuario:");
+      const pass = prompt("Contraseña:");
+
+      if (user === USER && pass === PASS) {
+        localStorage.setItem("auth-ok", "true");
+        window.location.reload(); // recarga para volver a mostrar el prompt
+      } else {
+        alert("Acceso denegado");
+        window.location.reload(); // recarga para volver a mostrar el prompt
+
+      }
+    }
+  }, []);
+
+  if (!authorized) {
+    return null; // o un <div>Cargando...</div>
+  }
+
   const [sessionTime, setSessionTime] = useState<number>(0);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [conversationData, setConversationData] = useState<
@@ -477,7 +506,10 @@ const App: React.FC = () => {
     // Update DOM elements directly or manage state if needed
   };
 
-  function submitAudiodataStream(audioData: any, wsManager: WebSocketEventManager) {
+  function submitAudiodataStream(
+    audioData: any,
+    wsManager: WebSocketEventManager
+  ) {
     if (audioData) {
       const audioBytes =
         audioData instanceof Uint8Array ? audioData : new Uint8Array(audioData);
