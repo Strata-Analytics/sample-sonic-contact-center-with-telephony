@@ -17,7 +17,9 @@ import { v4 as uuidv4 } from "uuid";
 const app = express();
 const wsInstance = expressWs(app);
 app.use(bodyParser.json());
-
+app.get("/socket/test", (req: Request, res: Response) => {
+  res.send("Este es un texto cualquiera de prueba en /socket/test");
+});
 const bedrockClient = new NovaSonicBidirectionalStreamClient({
   requestHandlerConfig: {
     maxConcurrentStreams: 10,

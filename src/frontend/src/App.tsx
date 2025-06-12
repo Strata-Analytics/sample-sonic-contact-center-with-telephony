@@ -17,7 +17,7 @@ let sessionTimer: number | null = null;
 
 // .env settings
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || "localhost:3001";
-const WS_URL = `ws://${SERVER_URL}/socket`;
+const WS_URL = `wss://${SERVER_URL}/socket`;
 const MICROPHONE_IS_MUTED =
   import.meta.env.VITE_MICROPHONE_IS_MUTED?.toLowerCase() === "true";
 
