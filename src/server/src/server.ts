@@ -240,7 +240,7 @@ wsInstance.app.ws("/socket", (ws: WebSocket, req: Request) => {
             `Si la tool 'follow_script' devuelve un error, usa la propiedad 'fix' para corregir el error en el llamado. ` +
             `Nunca inventes los valores para 'name' o 'arguments' al llamar a la tool 'follow_script', tienes que usar solamente aquellos que vienen en el item de la lista en la propiedad 'next_process' que tienes que elegir. ` +
             `Para la tool 'follow_script', los valores posibles de 'name' son 'VerificarOutageBloqueante', 'InternetHFCVerificarHistorico', 'InternetHFCVerificarCortes', 'DiagnosticoCM', 'Uptime', 'CheckCM', 'InternetVelocidadContratada', 'EndFlow', y 'CheckToolResponse'. ` +
-            `\nAlgunas abreviaciones: CM: Cable Modem, HFC: Hybrid Fiber Coaxial. ` +
+            `\nAlgunas abreviaciones: CM: Cable Modem, HFC: Hybrid Fiber Coaxial, Mbps: megabits por segundos. ` +
             `\nNo llames a la tool de manera consecutiva sin hablar con el cliente, siempre tienes que hablar con el cliente antes de volver a llamar a la tool. ` +
             `\nLa tool siempre se llama con 'session_id', 'case_id' y 'next_process'. `
         );
