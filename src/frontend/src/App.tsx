@@ -20,7 +20,7 @@ let sessionTimer: number | null = null;
 
 // .env settings
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || "localhost:3001";
-const SOCKET_PROTOCOL = SERVER_URL.startsWith("locahost") ? "ws" : "wss";
+const SOCKET_PROTOCOL = SERVER_URL.startsWith("localhost") ? "ws" : "wss";
 const WS_URL = `${SOCKET_PROTOCOL}://${SERVER_URL}/socket`;
 const MICROPHONE_IS_MUTED =
   import.meta.env.VITE_MICROPHONE_IS_MUTED?.toLowerCase() === "true";
@@ -36,7 +36,9 @@ const SILENCE_DURATION = 1000;
 const MIN_SPEECH_SAMPLES = 5;
 
 const App: React.FC = () => {
-  const [authorized, setAuthorized] = useState(!!localStorage.getItem("auth-ok"));
+  const [authorized, setAuthorized] = useState(
+    !!localStorage.getItem("auth-ok")
+  );
   console.log("authorized", authorized);
   useEffect(() => {
     const isAuthorized = localStorage.getItem("auth-ok");
@@ -52,7 +54,6 @@ const App: React.FC = () => {
       } else {
         alert("Acceso denegado");
         window.location.reload(); // recarga para volver a mostrar el prompt
-
       }
     }
   }, []);
@@ -251,7 +252,6 @@ const App: React.FC = () => {
   ): Promise<void> => {
     if (!history || history.length === 0) return;
     const newConversationData: ConversationMessage[] = [];
-
     for (let i = 0; i < history.length; i++) {
       const historyItem = history[i];
       if (!historyItem.role || !historyItem.message) continue;
@@ -286,7 +286,9 @@ const App: React.FC = () => {
     sentimentTracker
       .processHistory(history)
       .then((result: SentimentResult | null) => {
-        if (result) updateSentimentWithResult(result);
+        if (result) {
+          updateSentimentWithResult(result);
+        }
       });
   };
 
@@ -302,13 +304,13 @@ const App: React.FC = () => {
     if (result.sentimentData?.length > 0) {
       setSentimentData(
         result.sentimentData.map((item) => ({
-          time: item.time - result.sentimentData![0].time,
+          time: item.time - result.sentimentData[0].time,
           score: item.score,
         }))
       );
     }
     if (result.overallSentiment) setOverallSentiment(result.overallSentiment!);
-    if (result.insights?.length > 0) setNovaInsights(result.insights!);
+    if (result.insights?.length! > 0) setNovaInsights(result.insights!);
     updateDashboard();
   };
 
@@ -327,6 +329,7 @@ const App: React.FC = () => {
       }
 
       const scores = dataPoints.map((d) => d.score);
+      // actualiza los labels de tiempo Y axis
       sentimentLineChartRef.current.data.labels = dataPoints.map((d) =>
         d.time.toString()
       );

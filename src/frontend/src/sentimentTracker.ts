@@ -1,8 +1,9 @@
 import { analyzeSentiment, generateInsight } from "./bedrockSentimentAnalyzer";
+import type { OverallSentiment, SentimentDataPoint, SentimentResult } from "./types";
 
 class SentimentTracker {
-  overallSentiment;
-  sentimentData;
+  overallSentiment: OverallSentiment;
+  sentimentData: SentimentDataPoint[];
   insights;
   lastHistoryLength;
 
@@ -17,13 +18,12 @@ class SentimentTracker {
     this.lastHistoryLength = 0;
   }
 
-  async processHistory(history): Promise<void> {
-    if (!history || history.length <= this.lastHistoryLength) return;
+  async processHistory(history): Promise<SentimentResult | null> {
+    if (!history || history.length <= this.lastHistoryLength) return null;
 
     console.log("Processing new messages in history");
 
     let latestUserMessage = null;
-
     for (let i = this.lastHistoryLength; i < history.length; i++) {
       const historyItem = history[i];
       if (!historyItem.role || historyItem.role.toLowerCase() !== "user") {
@@ -34,8 +34,9 @@ class SentimentTracker {
 
     this.lastHistoryLength = history.length;
     if (latestUserMessage) {
-      await this.analyzeMessage(latestUserMessage, history);
+      return this.analyzeMessage(latestUserMessage, history);
     }
+    return null;
   }
 
   async analyzeMessage(message, history) {
