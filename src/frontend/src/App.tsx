@@ -671,7 +671,7 @@ const App: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <label htmlFor="session-id" className="text-sm">
-                Session ID:
+                Session ID (sessionId:caseId):
               </label>
               <input
                 id="session-id"

@@ -630,6 +630,15 @@ export class NovaSonicBidirectionalStreamClient {
     const session = this.activeSessions.get(sessionId);
     if (!session) return;
 
+    let [chatSessionId, chatCaseId] = sessionId.split(":");
+    if (!chatCaseId) {
+      chatCaseId = "00";
+    }
+
+    systemPromptContent =
+      systemPromptContent +
+      `\nEstas son las variables que mantendrás para toda la conversación con el cliente: 'session_id': '${chatSessionId}', 'case_id': '${chatCaseId}'. \n`;
+
     const textPromptID = randomUUID();
     this.addEventToSessionQueue(sessionId, {
       event: {
