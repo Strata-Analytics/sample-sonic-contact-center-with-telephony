@@ -19,6 +19,7 @@ import {
 import { SessionData, NovaSonicBidirectionalStreamClientConfig } from "./types";
 import { ToolRegistry } from "./tools/ToolRegistry";
 import { WebSocket } from "ws";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 export class StreamSession {
   private audioBufferQueue: Buffer[] = [];
@@ -136,6 +137,7 @@ export class NovaSonicBidirectionalStreamClient {
   private sessionCleanupInProgress = new Set<string>();
   private toolRegistry = new ToolRegistry();
   public contentNames: Map<string, string> = new Map();
+  public allMessages: Map<string, any[]> = new Map();
 
   constructor(config: NovaSonicBidirectionalStreamClientConfig) {
     const nodeHttp2Handler = new NodeHttp2Handler({
@@ -446,6 +448,29 @@ export class NovaSonicBidirectionalStreamClient {
                   jsonResponse.event.contentStart
                 );
               } else if (jsonResponse.event?.textOutput) {
+                console.log(
+                  `=======================>`,
+                  jsonResponse.event.textOutput
+                );
+                if (!this.allMessages.has(sessionId)) {
+                  this.allMessages.set(sessionId, []);
+                }
+                const messages = this.allMessages.get(sessionId)!;
+                const newMessage = {
+                  role: jsonResponse.event.textOutput["role"],
+                  message: jsonResponse.event.textOutput["content"].trim(),
+                  timestamp: new Date().toISOString(),
+                };
+                // Avoid pushing repeated objects by checking all previous messages
+                const isDuplicate = messages.some(
+                  (msg) =>
+                    msg.role === newMessage.role &&
+                    msg.message === newMessage.message
+                );
+                if (!isDuplicate) {
+                  messages.push(newMessage);
+                }
+
                 this.dispatchEvent(
                   sessionId,
                   "textOutput",
@@ -544,6 +569,11 @@ export class NovaSonicBidirectionalStreamClient {
             type: "internalServerException",
             details: event.internalServerException,
           });
+        } else {
+          console.log(
+            `Unknown event for session ${sessionId}: `,
+            JSON.stringify(event, null, 2)
+          );
         }
       }
 
@@ -878,8 +908,46 @@ export class NovaSonicBidirectionalStreamClient {
       this.activeSessions.delete(sessionId);
       this.sessionLastActivity.delete(sessionId);
       console.log(`Session ${sessionId} closed.`);
+      console.log("-----------> END SESSION <-----------");
+      if (this.allMessages.has(sessionId)) {
+        console.log(
+          `All messages for session ${sessionId}:`,
+          this.allMessages.get(sessionId)
+        );
+      }
+      await this.saveAllMessagesToS3(sessionId);
+      console.log("-----------> --------- <-----------");
     } finally {
       this.sessionCleanupInProgress.delete(sessionId);
+    }
+  }
+
+  private async saveAllMessagesToS3(sessionId: string) {
+    try {
+      const s3Client = new S3Client({
+        region: process.env.AWS_REGION || "us-east-1",
+        credentials: this.bedrockRuntimeClient.config.credentials,
+      });
+
+      const messages = this.allMessages.get(sessionId);
+      if (messages && messages.length > 0) {
+        const now = new Date();
+        const isoDate = now.toISOString().replace(/\.\d{3}Z$/, "Z");
+        const key = `conversations/${sessionId}-${isoDate}.json`;
+        const putCommand = new PutObjectCommand({
+          Bucket: "demo-connect-bot-data-exports",
+          Key: key,
+          Body: JSON.stringify(messages, null, 2),
+          ContentType: "application/json",
+        });
+        await s3Client.send(putCommand);
+        console.log(`allMessages for session ${sessionId} saved to S3: ${key}`);
+      }
+    } catch (err) {
+      console.error(
+        `Failed to save allMessages for session ${sessionId} to S3:`,
+        err
+      );
     }
   }
 }
