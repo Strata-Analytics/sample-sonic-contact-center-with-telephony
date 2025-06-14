@@ -11,9 +11,13 @@ import type {
 import { synthesizeSpeech } from "./tts";
 import Chart from "chart.js/auto";
 import "./App.css";
-
-const USER = "strata";
-const PASS = "strata";
+import { useAuth } from "./hooks/useAuth";
+import Header from "./components/common/Header";
+import SentimentLineChart from "./components/charts/SentimentLineChart";
+import SentimentDonutChart from "./components/charts/SentimentDonutChart";
+import NovaInsights from "./components/insights/NovaInsights";
+import LiveTranscript from "./components/transcript/LiveTranscript";
+import Footer from "./components/common/Footer";
 
 let wsManager: WebSocketEventManager | null = null;
 let sessionTimer: number | null = null;
@@ -36,31 +40,17 @@ const SILENCE_DURATION = 1000;
 const MIN_SPEECH_SAMPLES = 5;
 
 const App: React.FC = () => {
-  const [authorized, setAuthorized] = useState(
-    !!localStorage.getItem("auth-ok")
-  );
-  console.log("authorized", authorized);
-  useEffect(() => {
-    const isAuthorized = localStorage.getItem("auth-ok");
-    if (isAuthorized === "true") {
-      setAuthorized(true);
-    } else {
-      const user = prompt("Usuario:");
-      const pass = prompt("Contraseña:");
-
-      if (user === USER && pass === PASS) {
-        localStorage.setItem("auth-ok", "true");
-        window.location.reload(); // recarga para volver a mostrar el prompt
-      } else {
-        alert("Acceso denegado");
-        window.location.reload(); // recarga para volver a mostrar el prompt
-      }
-    }
-  }, []);
-
+  const { authorized } = useAuth();
   if (!authorized) {
-    return null; // o un <div>Cargando...</div>
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+          <p className="text-gray-600">Please log in to access the dashboard.</p>
+        </div>
+      </div>)
   }
+
 
   const [sessionTime, setSessionTime] = useState<number>(0);
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -314,12 +304,6 @@ const App: React.FC = () => {
     updateDashboard();
   };
 
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? "0" + secs : secs}`;
-  };
-
   const updateDashboard = () => {
     const updateSentimentChart = () => {
       if (!sentimentLineChartRef.current) return;
@@ -342,8 +326,8 @@ const App: React.FC = () => {
           latestScore >= 66
             ? [GREEN, 0.1]
             : latestScore >= 33
-            ? [YELLOW, 0.1]
-            : [ORANGE, 0.1];
+              ? [YELLOW, 0.1]
+              : [ORANGE, 0.1];
         dataset.borderColor = `rgb(${color})`;
         dataset.backgroundColor = `rgba(${color}, ${alpha})`;
       }
@@ -566,16 +550,14 @@ const App: React.FC = () => {
 
       conversationData.forEach((message) => {
         const messageDiv = document.createElement("div");
-        messageDiv.className = `flex ${
-          message.sender === "user" ? "justify-end" : "justify-start"
-        }`;
+        messageDiv.className = `flex ${message.sender === "user" ? "justify-end" : "justify-start"
+          }`;
 
         const innerDiv = document.createElement("div");
-        innerDiv.className = `max-w-xs p-3 rounded-lg ${
-          message.sender === "user"
+        innerDiv.className = `max-w-xs p-3 rounded-lg ${message.sender === "user"
             ? "bg-blue-500 text-white rounded-br-none"
             : "bg-gray-300 text-black rounded-bl-none"
-        }`;
+          }`;
 
         let cleanText = message.text;
         const handleTrailingDuplicates = (text: string): string => {
@@ -646,8 +628,8 @@ const App: React.FC = () => {
             messageSentiment >= 66
               ? "bg-green-500"
               : messageSentiment >= 33
-              ? "bg-yellow-500"
-              : "bg-orange-500";
+                ? "bg-yellow-500"
+                : "bg-orange-500";
           sentimentDot.className = `w-3 h-3 rounded-full ${dotColor} ml-2`;
           sentimentDot.title = `Sentiment: ${messageSentiment}`;
           footerDiv.appendChild(sentimentDot);
@@ -664,164 +646,26 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col w-full h-screen bg-gray-50 gap-4">
       <div className="px-8 py-4 flex flex-col w-full h-full gap-4">
-        <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="text-blue-500">⚡</div>
-            <h1 className="text-xl font-bold">
-              Amazon Nova Real-time Analytics Dashboard
-            </h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <label htmlFor="session-id" className="text-sm">
-                Session ID (sessionId:caseId):
-              </label>
-              <input
-                id="session-id"
-                type="text"
-                placeholder="Leave empty for new session"
-                className="border rounded px-2 py-1 text-sm w-48"
-                value={sessionId}
-                onChange={(e) => setSessionId(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <div>🕐</div>
-              <span id="session-time" className="font-mono">
-                {formatTime(sessionTime)}
-              </span>
-            </div>
-            <button
-              id="start-button"
-              className="flex items-center gap-2 px-3 py-1 rounded-md bg-green-100 text-green-700"
-              onClick={startStreaming}
-              disabled={isRecording}
-            >
-              📞
-            </button>
-            <button
-              id="stop-button"
-              className="flex items-center gap-2 px-3 py-1 rounded-md bg-red-100 text-red-700"
-              onClick={stopStreaming}
-              disabled={!isRecording}
-            >
-              📞
-            </button>
-          </div>
-        </div>
+        <Header {...{
+          sessionId,
+          sessionTime,
+          isRecording
+        }} onSessionIdChange={setSessionId} onStartStreaming={startStreaming} onStopStreaming={stopStreaming} />
 
         <div className="flex gap-4 flex-grow overflow-hidden">
           <div className="flex flex-col flex-1 gap-4 overflow-y-auto">
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h2 className="text-md font-semibold mb-2">
-                  Real-time Sentiment Analysis
-                </h2>
-                <div style={{ height: "200px" }}>
-                  <canvas id="sentiment-chart"></canvas>
-                </div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h2 className="text-md font-semibold mb-2">
-                  Overall Sentiment Distribution
-                </h2>
-                <div className="flex items-center">
-                  <div style={{ width: "50%", height: "180px" }}>
-                    <canvas id="sentiment-donut"></canvas>
-                  </div>
-                  <div className="w-1/2">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="text-green-500">📈</div>
-                      <span className="font-semibold">Dominant Tone:</span>
-                      <span id="dominant-tone" className="text-sm">
-                        {Object.entries(overallSentiment).reduce(
-                          (max, [tone, value]) =>
-                            value >
-                            overallSentiment[max as keyof OverallSentiment]
-                              ? tone
-                              : max,
-                          "negative"
-                        )}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                        <span>
-                          Positive:{" "}
-                          <span id="positive-percent">
-                            {getPercent("positive")}
-                          </span>
-                          %
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                        <span>
-                          Neutral:{" "}
-                          <span id="neutral-percent">
-                            {getPercent("neutral")}
-                          </span>
-                          %
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                        <span>
-                          Negative:{" "}
-                          <span id="negative-percent">
-                            {getPercent("negative")}
-                          </span>
-                          %
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <SentimentLineChart data={sentimentData} />
+              <SentimentDonutChart overallSentiment={overallSentiment} />
             </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="text-amber-500">⚠️</div>
-                <h2 className="text-md font-semibold">Nova AI Insights</h2>
-              </div>
-              <div id="insights-container" className="space-y-2">
-                {novaInsights.map((insight, index) => (
-                  <div
-                    key={index}
-                    className="p-2 bg-amber-50 rounded border-l-4 border-amber-400 text-sm"
-                  >
-                    {insight}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <NovaInsights insights={novaInsights} />
           </div>
           <div className="w-1/3 bg-white rounded-lg shadow p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-3 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="text-blue-500">🎤</div>
-                <h2 className="text-md font-semibold">Live Transcript</h2>
-              </div>
-              <div className="text-xs text-gray-500">
-                <div className="flex items-center gap-1">
-                  <div
-                    id="recording-indicator"
-                    className={`w-2 h-2 rounded-full ${
-                      isRecording ? "bg-red-500" : "bg-gray-400"
-                    }`}
-                  ></div>
-                  <span id="recording-status">
-                    {isRecording ? "Recording" : "Ready"}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div
-              id="transcript-container"
-              className="overflow-y-auto flex-grow bg-gray-100 rounded p-3 space-y-3"
-              ref={transcriptContainerRef}
-            ></div>
+            <LiveTranscript {...{
+              isRecording,
+              conversationData,
+              sentimentData
+            }} />
             <div className="mt-4 border-t pt-3 flex-shrink-0">
               <h3 className="text-sm font-semibold mb-2">Speech Analytics</h3>
               <div className="grid grid-cols-3 gap-2 text-sm">
@@ -868,13 +712,10 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow text-xs text-gray-500 flex-shrink-0 mt-auto">
-          <div>Amazon Nova Analytics v1.3.5</div>
-          <div>Powered by Amazon Nova Speech and Text AI Models</div>
-          <div id="connection-status" className={`status ${connectionStatus}`}>
-            {statusMessage}
-          </div>
-        </div>
+        <Footer
+          connectionStatus={connectionStatus}
+          statusMessage={statusMessage}
+        />
       </div>
     </div>
   );
