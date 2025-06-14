@@ -27,11 +27,10 @@ const LiveTranscript: React.FC<LiveTranscriptProps> = ({
         messageDiv.className = `flex ${message.sender === "user" ? "justify-end" : "justify-start"}`;
 
         const innerDiv = document.createElement("div");
-        innerDiv.className = `max-w-xs p-3 rounded-lg ${
-          message.sender === "user"
+        innerDiv.className = `max-w-xs p-3 rounded-lg ${message.sender === "user"
             ? "bg-blue-500 text-white rounded-br-none"
             : "bg-gray-300 text-black rounded-bl-none"
-        }`;
+          }`;
 
         let cleanText = message.text;
         const handleTrailingDuplicates = (text: string): string => {
@@ -102,8 +101,8 @@ const LiveTranscript: React.FC<LiveTranscriptProps> = ({
             messageSentiment >= 66
               ? "bg-green-500"
               : messageSentiment >= 33
-              ? "bg-yellow-500"
-              : "bg-orange-500";
+                ? "bg-yellow-500"
+                : "bg-orange-500";
           sentimentDot.className = `w-3 h-3 rounded-full ${dotColor} ml-2`;
           sentimentDot.title = `Sentiment: ${messageSentiment}`;
           footerDiv.appendChild(sentimentDot);
@@ -118,7 +117,7 @@ const LiveTranscript: React.FC<LiveTranscriptProps> = ({
   }, [conversationData, sentimentData]);
 
   return (
-    <div className="w-1/3 bg-white rounded-lg shadow p-4 flex flex-col">
+    <>
       <div className="flex items-center justify-between mb-3 flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="text-blue-500">🎤</div>
@@ -127,9 +126,8 @@ const LiveTranscript: React.FC<LiveTranscriptProps> = ({
         <div className="text-xs text-gray-500">
           <div className="flex items-center gap-1">
             <div
-              className={`w-2 h-2 rounded-full ${
-                isRecording ? "bg-red-500" : "bg-gray-400"
-              }`}
+              className={`w-2 h-2 rounded-full ${isRecording ? "bg-red-500" : "bg-gray-400"
+                }`}
             ></div>
             <span>{isRecording ? "Recording" : "Ready"}</span>
           </div>
@@ -139,7 +137,7 @@ const LiveTranscript: React.FC<LiveTranscriptProps> = ({
         className="overflow-y-auto flex-grow bg-gray-100 rounded p-3 space-y-3"
         ref={transcriptContainerRef}
       ></div>
-    </div>
+    </>
   );
 };
 
