@@ -933,7 +933,8 @@ export class NovaSonicBidirectionalStreamClient {
       if (messages && messages.length > 0) {
         const now = new Date();
         const isoDate = now.toISOString().replace(/\.\d{3}Z$/, "Z");
-        const key = `conversations/${sessionId}-${isoDate}.json`;
+        const dateDir = isoDate.slice(0, 10); // e.g., "2025-06-16"
+        const key = `conversations/${dateDir}/${sessionId}-${isoDate}.json`;
         const putCommand = new PutObjectCommand({
           Bucket: "demo-connect-bot-data-exports",
           Key: key,
