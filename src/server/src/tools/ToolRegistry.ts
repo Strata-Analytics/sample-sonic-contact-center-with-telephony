@@ -102,7 +102,7 @@ function endAudioContent(
   return event;
 }
 
-async function triggerSonic(
+export async function triggerSonic(
   client: NovaSonicBidirectionalStreamClient,
   ws: WebSocket,
   toolUseContent: any,

@@ -12,6 +12,7 @@ import { TwilioIntegration } from "./telephony/twilio";
 import { VonageIntegration } from "./telephony/vonage";
 import { fromEnv } from "@aws-sdk/credential-providers";
 import { v4 as uuidv4 } from "uuid";
+import { triggerSonic } from "./tools/ToolRegistry";
 // import { GenesysIntegration } from "./telephony/genesys";
 
 const app = express();
@@ -207,31 +208,6 @@ wsInstance.app.ws("/socket", (ws: WebSocket, req: Request) => {
         setUpEventHandlersForChannel(session, channelId);
         await session.setupPromptStart();
 
-        // `Eres un agente de una compañía telefónica. El cliente te hablará ` +
-        //   `por problemas en su connexión a internet que tu compañía telefónica brinda.  ` +
-        //   `Responde de manera corta y concisa, generalmente entre 1 o 2 frases ya que tu conversación con el cliente debe ser fluida. ` +
-        //   `Siempre saluda al cliente al comenzar la conversación y si el cliente no mencionó el problema pregunta cuál es el motivo de la llamada. Luego de saludar y saber cuál es el problema tienes que hacer es usar la tool 'follow_script' para correr un proceso con 'name': 'VerificarOutageBloqueante' y 'arguments': '{}'. ` +
-        //   `Esta herramienta permite seguir un proceso estructurado para diagnosticar y resolver problemas de conexión a internet de manera eficiente. ` +
-
-        //   `Cada vez que llamas a la tool 'follow_script' tienes que buscar en su respuesta la propiedad 'prompt' para saber qué decir al cliente. Además, para saber qué paso seguir, usa ` +
-        //   `la informacion que viene en la propiedad 'next_process' que es una lista. ` +
-        //   `Si la lista tiene un solo item, el próximo llamado a la tool 'follow_script' la tienes que hacer con 'name' y 'arguments' provistos en ese item. ` +
-        //   `Pero, si la lista tiene más de un item tienes que decidir qué item de la lista usar siguiendo las indicaciones en la propiedad ` +
-        //   `'prompt'. En este caso, tienes que indagar al cliente y decidir qué item es el más apropiado para el siguiente paso. ` +
-        //   `Asegurate siempre de llamar a la tool con estas keys requeridas: 'case_id', 'session_id', and 'next_process'. ` +
-        //   `Si la tool 'follow_script' devuelve un error, usa la propiedad 'fix' para corregir el error en el llamado. ` +
-        //   `Nunca inventes los valores para 'name' o 'arguments' al llamar a la tool 'follow_script', tienes que usar solamente aquellos que vienen en el item de la lista en la propiedad 'next_process' que tienes que elegir. ` +
-        //   `Para la tool 'follow_script', los valores posibles de 'name' son 'VerificarOutageBloqueante', 'InternetHFCVerificarHistorico', 'InternetHFCVerificarCortes', 'DiagnosticoCM', 'Uptime', 'CheckCM', 'InternetVelocidadContratada', 'EndFlow', y 'CheckToolResponse'.\n` +
-        //   `Si el usuario decide no seguir con el proceso de diagnostico y resolucion de problema con internet, no llames a la tool, acepta su decisión y despídete.\n` +
-        //   `\nNo llames a la tool de manera consecutiva sin hablar con el cliente, siempre tienes que hablar con el cliente antes de volver a llamar a la tool. ` +
-        //   `\nLa tool siempre se llama con 'session_id', 'case_id' y 'next_process'. ` +
-        //   `\nContesta las interrupciones del cliente de manera natural y fluida, no ignores al cliente. ` +
-        //   `\nNunca repitas una frase que ya dijiste al cliente, siempre tienes que hablar de manera fluida y natural. ` +
-        //   `\nAlgunas abreviaciones a tener en cuenta para conversar con el cliente:\n` +
-        //   `- CM: Cable Modem \n` +
-        //   `- HFC: Hybrid Fiber Coaxial \n` +
-        //   `- Mbps: megabits por segundos.\n`;
-
         await session.setupSystemPrompt(
           undefined,
           `Eres un agente de soporte de una compañía telefónica. Tu tarea es ayudar al cliente con problemas en su conexión a internet de manera eficiente, profesional y empática.
@@ -283,8 +259,8 @@ wsInstance.app.ws("/socket", (ws: WebSocket, req: Request) => {
       Recuerda: tu objetivo es guiar al cliente paso a paso, asegurando que comprenda el proceso y se sienta acompañado en todo momento.`
         );
         await session.setupStartAudio();
-
         isNewChannel = true;
+        await triggerSonic(bedrockClient, ws, "toolUseContent", "Hola");
       }
 
       // Add this client to the channel.
