@@ -17,7 +17,7 @@ import {
   DefaultTextConfiguration,
 } from "./consts";
 import { SessionData, NovaSonicBidirectionalStreamClientConfig } from "./types";
-import { ToolRegistry } from "./tools/ToolRegistry";
+import { ToolRegistry, triggerSonic } from "./tools/ToolRegistry";
 import { WebSocket } from "ws";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
@@ -425,7 +425,7 @@ export class NovaSonicBidirectionalStreamClient {
   ): Promise<void> {
     const session = this.activeSessions.get(sessionId);
     if (!session) return;
-
+    await triggerSonic(this, ws, "toolUseContent", "Hola");
     try {
       for await (const event of response.body) {
         if (!session.isActive) {

@@ -259,8 +259,7 @@ wsInstance.app.ws("/socket", (ws: WebSocket, req: Request) => {
       Recuerda: tu objetivo es guiar al cliente paso a paso, asegurando que comprenda el proceso y se sienta acompañado en todo momento.`
         );
         await session.setupStartAudio();
-        isNewChannel = true;
-        await triggerSonic(bedrockClient, ws, "toolUseContent", "Hola");
+        isNewChannel = true;        
       }
 
       // Add this client to the channel.
