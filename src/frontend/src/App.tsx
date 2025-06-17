@@ -77,7 +77,7 @@ const App: React.FC = () => {
     useState<string>("disconnected");
   const [statusMessage, setStatusMessage] = useState<string>("Disconnected");
   const [sessionId, setSessionId] = useState<string>("");
-  const [ttsText, setTtsText] = useState<string>("");
+  // const [ttsText, setTtsText] = useState<string>("");
 
   const sentimentLineChartRef = useRef<Chart | null>(null);
   const sentimentDonutChartRef = useRef<Chart | null>(null);
@@ -85,18 +85,18 @@ const App: React.FC = () => {
 
   const toPercentString = (n: number): string => String(Math.round(n));
 
-  const getPercent = (category: string): string => {
-    switch (category) {
-      case "positive":
-        return toPercentString(overallSentiment.positive);
-      case "neutral":
-        return toPercentString(overallSentiment.neutral);
-      case "negative":
-        return toPercentString(overallSentiment.negative);
-      default:
-        return "";
-    }
-  };
+  // const getPercent = (category: string): string => {
+  //   switch (category) {
+  //     case "positive":
+  //       return toPercentString(overallSentiment.positive);
+  //     case "neutral":
+  //       return toPercentString(overallSentiment.neutral);
+  //     case "negative":
+  //       return toPercentString(overallSentiment.negative);
+  //     default:
+  //       return "";
+  //   }
+  // };
 
   const initializeCharts = () => {
     if (sentimentLineChartRef.current) {
@@ -241,6 +241,9 @@ const App: React.FC = () => {
     history: HistoryItem[] | null
   ): Promise<void> => {
     if (!history || history.length === 0) return;
+    // detecto si el primer mensaje es del usuario y lo borro ya que enviamos forzadamente un hola
+    if(history[0].role === "USER") history.shift();
+
     const newConversationData: ConversationMessage[] = [];
     for (let i = 0; i < history.length; i++) {
       const historyItem = history[i];
@@ -272,7 +275,7 @@ const App: React.FC = () => {
 
     setConversationData(newConversationData);
     updateTranscriptUI();
-
+    // history.shift()
     sentimentTracker
       .processHistory(history)
       .then((result: SentimentResult | null) => {
@@ -461,6 +464,7 @@ const App: React.FC = () => {
       };
 
       startDashboardUpdates();
+      // handleTtsSubmit("Hola");
     } catch (error: any) {
       console.error("Error accessing microphone:", error);
       setStatusMessage(`Error: ${error.message}`);
@@ -518,9 +522,8 @@ const App: React.FC = () => {
     }
   }
 
-  const handleTtsSubmit = async () => {
+  const handleTtsSubmit = async (text: string) => {
     try {
-      const text = ttsText;
       if (text && wsManager) {
         const audioData = await synthesizeSpeech(text);
         submitAudiodataStream(audioData, wsManager);
@@ -690,7 +693,7 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="mt-4 border-t pt-3 flex-shrink-0">
-              <div className="flex items-center gap-2 mb-2">
+              {/* <div className="flex items-center gap-2 mb-2">
                 <div className="flex gap-2">
                   <textarea
                     id="tts-text"
@@ -708,7 +711,7 @@ const App: React.FC = () => {
                     Send
                   </button>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
