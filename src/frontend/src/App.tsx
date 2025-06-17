@@ -464,7 +464,7 @@ const App: React.FC = () => {
       };
 
       startDashboardUpdates();
-      // handleTtsSubmit("Hola");
+      handleTtsSubmit("Hola");
     } catch (error: any) {
       console.error("Error accessing microphone:", error);
       setStatusMessage(`Error: ${error.message}`);
