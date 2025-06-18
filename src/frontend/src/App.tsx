@@ -34,8 +34,8 @@ const GREEN = "34, 197, 94"; // green
 const ORANGE = "249, 115, 22"; // orange
 const YELLOW = "234, 179, 8"; // yellow
 const sentimentLabels = ["positive", "neutral", "negative"];
-const SILENCE_THRESHOLD = 0.01;
-const SPEECH_THRESHOLD = 0.015;
+const SILENCE_THRESHOLD = 0.02;
+const SPEECH_THRESHOLD = 0.020;
 const SILENCE_DURATION = 1000;
 const MIN_SPEECH_SAMPLES = 5;
 
