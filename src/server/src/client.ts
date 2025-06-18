@@ -447,10 +447,10 @@ export class NovaSonicBidirectionalStreamClient {
                   jsonResponse.event.contentStart
                 );
               } else if (jsonResponse.event?.textOutput) {
-                console.log(
-                  `=======================>`,
-                  jsonResponse.event.textOutput
-                );
+                // console.log(
+                //   `=======================>`,
+                //   jsonResponse.event.textOutput
+                // );
                 if (!this.allMessages.has(sessionId)) {
                   this.allMessages.set(sessionId, []);
                 }

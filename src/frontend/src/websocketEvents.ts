@@ -131,7 +131,7 @@ export class WebSocketEventManager {
         }
       } else {
         // Es binario (Blob o ArrayBuffer)
-        console.warn("Binary message received, skipping JSON parse.");
+        // console.warn("Binary message received, skipping JSON parse.");
         // Si esperás audio o algo binario, lo podrías procesar acá
       }
     };

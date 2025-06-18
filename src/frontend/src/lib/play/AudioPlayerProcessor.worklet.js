@@ -16,7 +16,7 @@ class ExpandableBuffer {
         const now = Date.now();
         if (this.lastWriteTime !== 0) {
             const elapsed = now - this.lastWriteTime;
-            console.log(`Elapsed time since last audio buffer write: ${elapsed} ms`);
+            // console.log(`Elapsed time since last audio buffer write: ${elapsed} ms`);
         }
         this.lastWriteTime = now;
     }

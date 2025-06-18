@@ -160,12 +160,12 @@ const functions = {
     toolUseContent: any,
     messagesList: string[]
   ) => {
-    console.log("########################################################");
-    console.log("toolUseContent:", toolUseContent.content);
-    console.log(
-      "Type of toolUseContent.content:",
-      typeof toolUseContent.content
-    );
+    // console.log("########################################################");
+    // console.log("toolUseContent:", toolUseContent.content);
+    // console.log(
+    //   "Type of toolUseContent.content:",
+    //   typeof toolUseContent.content
+    // );
     const contentObj =
       typeof toolUseContent.content === "string"
         ? JSON.parse(toolUseContent.content)
@@ -192,7 +192,7 @@ const functions = {
         processName,
         processArguments
       );
-      console.log("-----------> Result from TecoFlowScript:", result);
+      // console.log("-----------> Result from TecoFlowScript:", result);
 
       if (result.error) {
         return { content: `Error: ${result.error}` };
@@ -200,7 +200,7 @@ const functions = {
 
       // messagesList.push(`The next step in your process is: ${result.next_process.name}`);
       // return { content: `The next step in your process is: ${result.next_process.name}` };
-      console.log("########################################################");
+      // console.log("########################################################");
       return result;
     } catch (error) {
       console.error("Error in follow_script:", error);
