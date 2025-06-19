@@ -908,12 +908,6 @@ export class NovaSonicBidirectionalStreamClient {
       this.sessionLastActivity.delete(sessionId);
       console.log(`Session ${sessionId} closed.`);
       console.log("-----------> END SESSION <-----------");
-      if (this.allMessages.has(sessionId)) {
-        console.log(
-          `All messages for session ${sessionId}:`,
-          this.allMessages.get(sessionId)
-        );
-      }
       await this.saveAllMessagesToS3(sessionId);
       console.log("-----------> --------- <-----------");
     } finally {
@@ -923,11 +917,15 @@ export class NovaSonicBidirectionalStreamClient {
 
   private async saveAllMessagesToS3(sessionId: string) {
     try {
+      console.log(`Saving allMessages for session ${sessionId} to S3...`);
+      if (!this.allMessages.has(sessionId)) {
+        console.log(`No messages found for session ${sessionId}`);
+        return;
+      }
       const s3Client = new S3Client({
         region: process.env.AWS_REGION || "us-east-1",
         credentials: this.bedrockRuntimeClient.config.credentials,
       });
-
       const messages = this.allMessages.get(sessionId);
       if (messages && messages.length > 0) {
         const now = new Date();
@@ -942,6 +940,7 @@ export class NovaSonicBidirectionalStreamClient {
         });
         await s3Client.send(putCommand);
         console.log(`allMessages for session ${sessionId} saved to S3: ${key}`);
+        this.allMessages.delete(sessionId);
       }
     } catch (err) {
       console.error(
