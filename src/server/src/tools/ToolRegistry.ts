@@ -37,11 +37,6 @@ const fetchTecoFlowScriptData = async (
 
     const response = await lambdaClient.send(command);
 
-    console.log(
-      "response fetchTecoFlowScriptData:-------------------------------",
-      response
-    );
-
     let result;
     if (response.Payload) {
       result = JSON.parse(Buffer.from(response.Payload).toString());
