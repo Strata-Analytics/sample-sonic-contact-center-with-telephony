@@ -33,7 +33,7 @@ async function analyzeSentiment(message) {
           role: "user",
           content: [
             {
-              text: `Analyze the sentiment of this message and return only a number between 0 and 100, where 0 to 33 is extremely, 33-66 is neutral, and 66 to 100 is positive. This means 0 is extremely negative and 100 is extremely positive. Only return the number, no other text: "${message}"`,
+              text: `Analiza el sentimiento de este mensaje y devuelve solo un número entre 0 y 100, donde 0 a 33 es negativo, 33-66 es neutral y 66 a 100 es positivo. Esto significa que 0 es extremadamente negativo y 100 es extremadamente positivo. Devuelve solo el número, sin ningún otro texto: "${message}"`,
             },
           ],
         },
