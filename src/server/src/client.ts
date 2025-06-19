@@ -160,7 +160,7 @@ export class NovaSonicBidirectionalStreamClient {
     });
 
     this.inferenceConfig = config.inferenceConfig ?? {
-      maxTokens: 1024,
+      maxTokens: 2048,
       topP: 0.9,
       temperature: 0.6,
     };
