@@ -288,6 +288,25 @@ const functions = {
       throw error;
     }
   },
+  get_current_time: async (
+    client: NovaSonicBidirectionalStreamClient,
+    ws: WebSocket,
+    toolUseContent: any,
+    messagesList: string[]
+  ) => {
+    try {
+      const now = new Date();
+      const current_time = now.toTimeString().slice(0, 5); // "HH:MM"
+      console.log("current_time:", current_time);
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+      return {
+        current_time: current_time,
+      };
+    } catch (error) {
+      console.error(`Error fetching current time data: ${error}`);
+      throw error;
+    }
+  },
 };
 
 function parseToolsFromXML(
@@ -366,6 +385,7 @@ function parseToolsFromXML(
 
 export const registeredTools = parseToolsFromXML(
   `
+<tool id="get_current_time" function="get_current_time" description="La hora actual en formato HH:MM."></tool>
 <tool id="get_weather" function="get_weather" description="Get the current weather for a given location, based on its WGS84 coordinates.">
   <property name="latitude" type="string" required="true" description="Geographical WGS84 latitude of the location." />
   <property name="longitude" type="string" required="true" description="Geographical WGS84 longitude of the location." />
