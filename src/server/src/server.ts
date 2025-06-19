@@ -221,6 +221,7 @@ wsInstance.app.ws("/socket", (ws: WebSocket, req: Request) => {
           - "Pregúntale al cliente como es el problema que tiene...", en su lugar, di algo como "Como es el problema que tienes...";
           - "Consulta al cliente si las distintas caídas fueron provocadas intencionalmente...", en su lugar, di algo como "Vamos a verificar si las caídas fueron provocadas intencionalmente...".
           - "Si el cliente no recuerda haber hecho...", en lugar, di algo como "No recuerdas haber hecho...".
+          - "El proceso de verificación de la velocidad contratada ha comenzado. Explica al usuario que estás comparando la velocidad que recibe con la que tiene contratada. Informa que puede tardar.", en su lugar, di algo como "Vamos a verificar la velocidad contratada. Esto puede tardar un poco...".
 
       - Para determinar el siguiente paso, consulta la lista 'next_process' en la respuesta:
         - Si hay un solo elemento, cuando llames nuevamente a 'follow_script' usa el 'name' y 'arguments' de ese elemento.
