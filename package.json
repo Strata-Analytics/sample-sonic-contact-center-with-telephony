@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix ./src/frontend\" \"npm run dev --prefix ./src/server\"",
     "dev:frontend": "npm run dev --prefix ./src/frontend",
-    "dev:server": "npm run dev --prefix ./src/server"
+    "dev:server": "npm run dev --prefix ./src/server",
+    "deploy:frontend": "npm run build:frontend && cd ./infra && pulumi up --yes",
+    "build:frontent": "npm run build --prefix ./src/frontend"
   },
   "author": "aws-telco-prototyping",
   "license": "UNLICENSED",
