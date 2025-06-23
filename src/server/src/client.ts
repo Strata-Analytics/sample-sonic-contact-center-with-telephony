@@ -160,9 +160,9 @@ export class NovaSonicBidirectionalStreamClient {
     });
 
     this.inferenceConfig = config.inferenceConfig ?? {
-      maxTokens: 2048,
+      maxTokens: 1024,
       topP: 0.9,
-      temperature: 0.6,
+      temperature: 0.7,
     };
   }
 
@@ -460,8 +460,9 @@ export class NovaSonicBidirectionalStreamClient {
                   message: jsonResponse.event.textOutput["content"].trim(),
                   timestamp: new Date().toISOString(),
                 };
-                // Avoid pushing repeated objects by checking all previous messages
-                const isDuplicate = messages.some(
+                // Avoid pushing repeated consecutive objects by checking last 3 previous messages
+                const recentMessages = messages.slice(-3);
+                const isDuplicate = recentMessages.some(
                   (msg) =>
                     msg.role === newMessage.role &&
                     msg.message === newMessage.message
