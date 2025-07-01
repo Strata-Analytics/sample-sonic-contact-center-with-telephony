@@ -58,8 +58,12 @@ const App: React.FC = () => {
 
   const handleSilence = useCallback(() => {
     if (wsManager) {
-      console.log("Silence detected");
-      handleTtsSubmit("Give me more information");
+      console.log("------------->Silence detected");
+      // handleTtsSubmit("I am the system and you decide what you have to do like search for tool results or inform about the process to the user or ask if the user is there");
+      // handleTtsSubmit("decide what to do");
+      handleTtsSubmit("Take the bull by the horns");
+      // handleTtsSubmit("I am the system and you decide what you have to do like search for tool results or inform the user or ask if the user is there");
+      // handleTtsSubmit("I am the system  decide what to do");
     }
   }, [handleTtsSubmit]);
 

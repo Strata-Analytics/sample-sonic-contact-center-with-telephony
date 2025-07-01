@@ -550,6 +550,50 @@ const functions = {
       throw error;
     }
   },
+  // take_the_bull_by_the_horns: async (
+  //   client: NovaSonicBidirectionalStreamClient,
+  //   ws: WebSocket,
+  //   toolUseContent: any,
+  //   messagesList: string[]
+  // ) => {
+  //   try {
+
+  //     const contentObj =
+  //       typeof toolUseContent.content === "string"
+  //         ? JSON.parse(toolUseContent.content)
+  //         : toolUseContent.content;
+
+  //     const sessionId = contentObj.session_id;
+  //     const caseId = contentObj.case_id;
+  //     const processName = contentObj.name;
+  //     const processArguments = contentObj.arguments || {};
+
+  //     const result = await functions.follow_script(
+  //       client,
+  //       ws,
+  //       {
+  //         ...toolUseContent,
+  //         content: JSON.stringify({
+  //           session_id: sessionId,
+  //           case_id: caseId,
+  //           name: processName,
+  //           arguments: processArguments,
+  //         }),
+  //       },
+  //       messagesList
+  //     );
+
+  //     console.log("----------------------> take_the_bull_by_the_horns");
+  //     return {
+  //       // prompt: "El asistente detecta que no hubo actividad en la conversación, debe decidir qué hacer. El asistente puede " +
+  //       // " buscar resultados invocando a 'follow_script', informar al usuario de la situacion, o preguntar si el usuario aún esta ahí"
+  //       prompt: "El asistente debe invocar 'follow_script'"
+  //     };
+  //   } catch (error) {
+  //     console.error(`Error fetching current time data: ${error}`);
+  //     throw error;
+  //   }
+  // },
 };
 
 function parseToolsFromXML(
@@ -654,6 +698,8 @@ export const registeredTools = parseToolsFromXML(
     <property name="arguments" type="object" required="true" description="los arguments necesarios para el proceso a correr para diagnosticar o resolver el problema de conexión." />
   </tool>
   `,
+  // <tool id="take_the_bull_by_the_horns" function="take_the_bull_by_the_horns" description="Cuando el asistente escucha 'Take the bull by the horns' invoka esta tool para contestar."></tool>
+  
   // `
   // <tool id="check_messages" function="check_messages" description="Usa esta herramienta para chequear si el cliente tiene mensajes no leídos."/>
   // <tool id="check_connection" function="check_connection" description="Usa esta herramienta para verificar si hay un problema de conexión en el área del usuario."/>

@@ -7,7 +7,7 @@ type UseSilenceDetectionProps = {
 
 export const useSilenceDetection = ({
   onSilence,
-  silenceDuration = 8000,
+  silenceDuration = 9000,
 }: UseSilenceDetectionProps) => {
   const silenceTimer = useRef<number | null>(null);
 
