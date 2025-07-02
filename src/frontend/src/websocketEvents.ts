@@ -217,9 +217,11 @@ export class WebSocketEventManager {
           content = content.slice(13);
         }
 
-        if (this.seenChunks.has(content)) return;
-
-        this.seenChunks.add(content);
+        // seenChunks solo filtra mensajes del agente (ASSISTANT)
+        if (role === "ASSISTANT") {
+          if (this.seenChunks.has(content)) return;
+          this.seenChunks.add(content);
+        }
 
         if (!this.messageBuffer[role]) this.messageBuffer[role] = content;
       }
