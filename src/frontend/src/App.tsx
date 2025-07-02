@@ -35,7 +35,7 @@ const ORANGE = "249, 115, 22"; // orange
 const YELLOW = "234, 179, 8"; // yellow
 const sentimentLabels = ["positive", "neutral", "negative"];
 const SILENCE_THRESHOLD = 0.02;
-const SPEECH_THRESHOLD = 0.020;
+const SPEECH_THRESHOLD = 0.02;
 const SILENCE_DURATION = 1000;
 const MIN_SPEECH_SAMPLES = 5;
 
@@ -46,11 +46,13 @@ const App: React.FC = () => {
       <div className="flex items-center justify-center h-screen bg-gray-100">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="text-gray-600">Please log in to access the dashboard.</p>
+          <p className="text-gray-600">
+            Please log in to access the dashboard.
+          </p>
         </div>
-      </div>)
+      </div>
+    );
   }
-
 
   const [sessionTime, setSessionTime] = useState<number>(0);
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -82,6 +84,9 @@ const App: React.FC = () => {
   const sentimentLineChartRef = useRef<Chart | null>(null);
   const sentimentDonutChartRef = useRef<Chart | null>(null);
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
+
+  // Timer para mensaje automático si el asistente fue el último en hablar
+  const autoReplyTimerRef = useRef<number | null>(null);
 
   const toPercentString = (n: number): string => String(Math.round(n));
 
@@ -242,13 +247,18 @@ const App: React.FC = () => {
   ): Promise<void> => {
     if (!history || history.length === 0) return;
     // detecto si el primer mensaje es del usuario y lo borro ya que enviamos forzadamente un hola
-    if(history[0].role === "USER") history.shift();
+    if (history[0].role === "USER") history.shift();
 
     const newConversationData: ConversationMessage[] = [];
     for (let i = 0; i < history.length; i++) {
       const historyItem = history[i];
       if (!historyItem.role || !historyItem.message) continue;
       if (historyItem.role.toLowerCase() === "system") continue;
+      if (
+        historyItem.role.toLowerCase() === "user" &&
+        historyItem.message.trim().toLowerCase() === "responde"
+      )
+        continue; // No mostrar mensajes 'responde' del usuario
 
       let sender: string;
       if (historyItem.role.toLowerCase() === "user") {
@@ -329,8 +339,8 @@ const App: React.FC = () => {
           latestScore >= 66
             ? [GREEN, 0.1]
             : latestScore >= 33
-              ? [YELLOW, 0.1]
-              : [ORANGE, 0.1];
+            ? [YELLOW, 0.1]
+            : [ORANGE, 0.1];
         dataset.borderColor = `rgb(${color})`;
         dataset.backgroundColor = `rgba(${color}, ${alpha})`;
       }
@@ -533,6 +543,13 @@ const App: React.FC = () => {
     }
   };
 
+  // Calcula la duración estimada del audio TTS en milisegundos (asume 150 palabras/minuto, 5 caracteres/palabra)
+  function estimateTtsDurationMs(text: string) {
+    const charsPerSecond = (150 * 5) / 60; // 12.5 caracteres/segundo
+    const durationSeconds = text.length / charsPerSecond;
+    return Math.ceil(durationSeconds * 1000);
+  }
+
   useEffect(() => {
     enhanceWebSocketEventManager();
     initializeDashboard();
@@ -553,14 +570,16 @@ const App: React.FC = () => {
 
       conversationData.forEach((message) => {
         const messageDiv = document.createElement("div");
-        messageDiv.className = `flex ${message.sender === "user" ? "justify-end" : "justify-start"
-          }`;
+        messageDiv.className = `flex ${
+          message.sender === "user" ? "justify-end" : "justify-start"
+        }`;
 
         const innerDiv = document.createElement("div");
-        innerDiv.className = `max-w-xs p-3 rounded-lg ${message.sender === "user"
+        innerDiv.className = `max-w-xs p-3 rounded-lg ${
+          message.sender === "user"
             ? "bg-blue-500 text-white rounded-br-none"
             : "bg-gray-300 text-black rounded-bl-none"
-          }`;
+        }`;
 
         let cleanText = message.text;
         const handleTrailingDuplicates = (text: string): string => {
@@ -631,8 +650,8 @@ const App: React.FC = () => {
             messageSentiment >= 66
               ? "bg-green-500"
               : messageSentiment >= 33
-                ? "bg-yellow-500"
-                : "bg-orange-500";
+              ? "bg-yellow-500"
+              : "bg-orange-500";
           sentimentDot.className = `w-3 h-3 rounded-full ${dotColor} ml-2`;
           sentimentDot.title = `Sentiment: ${messageSentiment}`;
           footerDiv.appendChild(sentimentDot);
@@ -646,14 +665,42 @@ const App: React.FC = () => {
     }
   }, [conversationData, sentimentData]);
 
+  useEffect(() => {
+    if (autoReplyTimerRef.current) {
+      clearTimeout(autoReplyTimerRef.current);
+      autoReplyTimerRef.current = null;
+    }
+    if (conversationData.length > 0) {
+      const lastMsg = conversationData[conversationData.length - 1];
+      if (lastMsg.sender === "agent") {
+        // Sumar duración estimada del audio TTS del agente + 8000ms
+        const ttsMs = estimateTtsDurationMs(lastMsg.text);
+        autoReplyTimerRef.current = window.setTimeout(() => {
+          handleTtsSubmit("responde");
+        }, ttsMs + 5000);
+      }
+    }
+    return () => {
+      if (autoReplyTimerRef.current) {
+        clearTimeout(autoReplyTimerRef.current);
+        autoReplyTimerRef.current = null;
+      }
+    };
+  }, [conversationData]);
+
   return (
     <div className="flex flex-col w-full h-screen bg-gray-50 gap-4">
       <div className="px-8 py-4 flex flex-col w-full h-full gap-4">
-        <Header {...{
-          sessionId,
-          sessionTime,
-          isRecording
-        }} onSessionIdChange={setSessionId} onStartStreaming={startStreaming} onStopStreaming={stopStreaming} />
+        <Header
+          {...{
+            sessionId,
+            sessionTime,
+            isRecording,
+          }}
+          onSessionIdChange={setSessionId}
+          onStartStreaming={startStreaming}
+          onStopStreaming={stopStreaming}
+        />
 
         <div className="flex gap-4 flex-grow overflow-hidden">
           <div className="flex flex-col flex-1 gap-4 overflow-y-auto">
@@ -664,11 +711,13 @@ const App: React.FC = () => {
             <NovaInsights insights={novaInsights} />
           </div>
           <div className="w-1/3 bg-white rounded-lg shadow p-4 flex flex-col">
-            <LiveTranscript {...{
-              isRecording,
-              conversationData,
-              sentimentData
-            }} />
+            <LiveTranscript
+              {...{
+                isRecording,
+                conversationData,
+                sentimentData,
+              }}
+            />
             <div className="mt-4 border-t pt-3 flex-shrink-0">
               <h3 className="text-sm font-semibold mb-2">Speech Analytics</h3>
               <div className="grid grid-cols-3 gap-2 text-sm">
