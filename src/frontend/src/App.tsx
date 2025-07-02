@@ -247,7 +247,7 @@ const App: React.FC = () => {
   ): Promise<void> => {
     if (!history || history.length === 0) return;
     // detecto si el primer mensaje es del usuario y lo borro ya que enviamos forzadamente un hola
-    if (history[0].role === "USER") history.shift();
+    if (history[0].role === "USER" && history[0].message.trim() == "hola") history.shift();
 
     const newConversationData: ConversationMessage[] = [];
     for (let i = 0; i < history.length; i++) {
@@ -256,9 +256,9 @@ const App: React.FC = () => {
       if (historyItem.role.toLowerCase() === "system") continue;
       if (
         historyItem.role.toLowerCase() === "user" &&
-        historyItem.message.trim().toLowerCase() === "responde"
+        historyItem.message.trim().toLowerCase().includes("take the bull by the horns")
       )
-        continue; // No mostrar mensajes 'responde' del usuario
+        continue; // No mostrar mensajes 'take the bull by the horns' del usuario
 
       let sender: string;
       if (historyItem.role.toLowerCase() === "user") {
@@ -474,6 +474,7 @@ const App: React.FC = () => {
       };
 
       startDashboardUpdates();
+      await new Promise((resolve) => setTimeout(resolve, 500));
       handleTtsSubmit("Hola");
     } catch (error: any) {
       console.error("Error accessing microphone:", error);
@@ -676,8 +677,8 @@ const App: React.FC = () => {
         // Sumar duración estimada del audio TTS del agente + 8000ms
         const ttsMs = estimateTtsDurationMs(lastMsg.text);
         autoReplyTimerRef.current = window.setTimeout(() => {
-          handleTtsSubmit("responde");
-        }, ttsMs + 5000);
+          handleTtsSubmit("take the bull by the horns");
+        }, ttsMs + 3000);
       }
     }
     return () => {
