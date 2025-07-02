@@ -5,12 +5,63 @@ import { NovaSonicBidirectionalStreamClient } from "../client";
 import { WebSocket } from "ws";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 
-const fetchTecoFlowScriptData = async (
+// const fetchTecoFlowScriptData = async (
+//   sessionId: string,
+//   caseId: string,
+//   processName: string,
+//   processArguments: Map<string, string | number>
+// ): Promise<Record<string, any>> => {
+//   const lambdaClient = new LambdaClient({
+//     region: process.env.AWS_REGION || "us-east-1",
+//   });
+
+//   try {
+//     const payload = {
+//       session_id: sessionId,
+//       case_id: caseId,
+//       next_process: {
+//         name: processName,
+//         arguments: processArguments,
+//       },
+//     };
+
+//     console.log(
+//       "fetchTecoFlowScriptData:----------------------------------",
+//       payload
+//     );
+
+//     const command = new InvokeCommand({
+//       FunctionName: "TecoFlowScript", // Replace with your Lambda function name
+//       Payload: Buffer.from(JSON.stringify(payload)),
+//     });
+
+//     const response = await lambdaClient.send(command);
+
+//     let result;
+//     if (response.Payload) {
+//       result = JSON.parse(Buffer.from(response.Payload).toString());
+//     } else {
+//       result = { error: "No payload returned from Lambda" };
+//     }
+
+//     return result;
+//   } catch (error) {
+//     console.error("Error invoking Lambda:", error);
+//     throw error;
+//   }
+// };
+
+const fetchTecoSonicProcessData = async (
   sessionId: string,
   caseId: string,
   processName: string,
-  processArguments: Map<string, string | number>
+  processArguments: Map<string, string | number>,
+  // messagesList: string[]
 ): Promise<Record<string, any>> => {
+  console.log(
+    "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% fetchTecoSonicProcessData",
+    // messagesList.length
+  );
   const lambdaClient = new LambdaClient({
     region: process.env.AWS_REGION || "us-east-1",
   });
@@ -19,19 +70,20 @@ const fetchTecoFlowScriptData = async (
     const payload = {
       session_id: sessionId,
       case_id: caseId,
-      next_process: {
+      run_process: { // changed from next_process to run_process
         name: processName,
         arguments: processArguments,
       },
     };
 
     console.log(
-      "fetchTecoFlowScriptData:----------------------------------",
+      "fetchTecoSonicProcessData payload:---------------------------------->",
       payload
     );
 
     const command = new InvokeCommand({
-      FunctionName: "TecoFlowScript", // Replace with your Lambda function name
+      // FunctionName: "TecoSonicProcess", // Replace with your Lambda function name
+      FunctionName: "TecoSonicProcessScript", // Replace with your Lambda function name
       Payload: Buffer.from(JSON.stringify(payload)),
     });
 
@@ -43,7 +95,9 @@ const fetchTecoFlowScriptData = async (
     } else {
       result = { error: "No payload returned from Lambda" };
     }
-
+    // messagesList.push(result);
+    console.log("result:", result);
+    console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
     return result;
   } catch (error) {
     console.error("Error invoking Lambda:", error);
@@ -97,14 +151,24 @@ function endAudioContent(
   return event;
 }
 
-export async function triggerSonic(
+// async function funcion_lenta() {
+//   await new Promise(
+//     (resolve) => setTimeout(resolve, 10000) // result = llamaarLambda(),
+//   );
+
+//   return "funcion lenta ha terminado";
+// }
+
+async function triggerSonic(
   client: NovaSonicBidirectionalStreamClient,
   ws: WebSocket,
   toolUseContent: any,
   message: string
 ) {
+  console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA triggerSonic");
   const audioData = await synthesizeSpeech(message);
   const hardcodedSessionId = "a8c43fa3-cb29-4625-9fad-7a5589b19ca6";
+
   const { promptName } = toolUseContent;
   const contentName = client.contentNames.get(hardcodedSessionId);
 
@@ -135,16 +199,19 @@ export async function triggerSonic(
               promptName,
               contentName,
               content: base64Data,
+              contentType: "SILENT_AUDIO",
             },
           },
         };
         ws.send(JSON.stringify(event));
       }
     }
+    console.log("######>>>>>>>1");
     setTimeout(() => {
       endAudioContent(ws, promptName, contentName);
       console.log("sent silent audio to WS");
     }, 1000);
+    console.log("######>>>>>>>2");
   }
 }
 
@@ -181,7 +248,7 @@ const functions = {
       processArguments: processArguments,
     });
     try {
-      const result = await fetchTecoFlowScriptData(
+      const result = await fetchTecoSonicProcessData(
         sessionId,
         caseId,
         processName,
@@ -202,64 +269,241 @@ const functions = {
       return { content: "An error occurred while processing your request." };
     }
   },
-  check_messages: async (
-    client: NovaSonicBidirectionalStreamClient,
-    ws: WebSocket,
-    toolUseContent: any,
-    messagesList: string[]
-  ) => {
-    return {
-      content: `The following messages are for the assistant to pass on to the user: [${messagesList.toString()}]`,
-    };
-  },
 
-  check_connection: async (
-    client: NovaSonicBidirectionalStreamClient,
-    ws: WebSocket,
-    toolUseContent: any,
-    messagesList: string[]
-  ) => {
-    setTimeout(() => {
-      const message =
-        "I've reviewed your connection status and detected that in the last 24 hours there were some problems registering your equipment on the network. This could have affected your service quality. To better understand what happened, I'm going to check if any specific outages were recorded that could have impacted your connection. Before we continue, can I verify that you're still there?";
-      messagesList.push(message);
-      console.log(`Added message to messagesList: ${message}`);
-      setTimeout(() => {
-        triggerSonic(
-          client,
-          ws,
-          toolUseContent,
-          "Do you have any messages for me?"
-        );
-      }, 3000);
-    }, 5000);
-    return {
-      content:
-        "I'm reviewing your connection status now, including anything that may have affected it.",
-    };
-  },
+  // follow_script: async (
+  //   client: NovaSonicBidirectionalStreamClient,
+  //   ws: WebSocket,
+  //   toolUseContent: any,
+  //   messagesList: string[]
+  // ) => {
+  //   console.log("########################################################");
+  //   const contentObj =
+  //     typeof toolUseContent.content === "string"
+  //       ? JSON.parse(toolUseContent.content)
+  //       : toolUseContent.content;
+  //   // console.log("Parsed:", contentObj);
 
-  check_for_outage: async (
-    client: NovaSonicBidirectionalStreamClient,
-    ws: WebSocket,
-    toolUseContent: any,
-    messagesList: string[]
-  ) => {
-    const { affectsAllUserDevices } = JSON.parse(toolUseContent.content);
+  //   const sessionId = contentObj.session_id;
+  //   const caseId = contentObj.case_id;
+  //   const processName = contentObj.name;
+  //   const processArguments = contentObj.arguments || {};
 
-    if (affectsAllUserDevices) {
-      return {
-        content:
-          "I confirmed that there's a massive outage in your area that's affecting your internet service. You can manage your service continuity pack through the MiPersonal app or website, as long as you meet the requirements. We'll notify you when service is restored. Do you want a copy of all the information I just said to be sent to you via SMS?",
-      };
-    } else {
-      functions.check_connection(client, ws, toolUseContent, messagesList);
-      return {
-        content:
-          "I checked, and I couldn't find any evidence of an outage in your area. I'm going to check if your connection had any issues in the past 24 hours. Please wait a moment",
-      };
-    }
-  },
+  //   console.log("-----------> follow_script called with:", {
+  //     sessionId: sessionId,
+  //     caseId: caseId,
+  //     processName: processName,
+  //     processArguments: processArguments,
+  //   });
+
+
+  //   // Call fetchTecoSonicProcessData asynchronously and triggerSonic when it completes
+  //   fetchTecoSonicProcessData(
+  //     sessionId,
+  //     caseId,
+  //     processName,
+  //     processArguments,
+  //   ).then((result) => {
+  //     console.log("1111111111111111111111111111111111111111111111111");
+  //     messagesList.push(JSON.stringify(result))
+  //     console.log("2222222222222222222222222222222222222222222222222");
+
+  //     new Promise((resolve) => setTimeout(resolve, 5000));
+
+  //     triggerSonic(
+  //       client,
+  //       ws,
+  //       toolUseContent,
+  //       // "Chequea la respuesta al llamado que hiciste de la herramienta 'follow_script' "
+  //       "check tool response"
+  //     );
+      
+  //     console.log("-----------> returning from follow_script called with:");
+  //     // return result;
+      
+
+  //   }).catch((error) => {
+  //     console.error("Error in follow_script:", error);
+  //   });
+
+  //   const content = `El asistente debe informar al cliente que llamó al proceso '${processName}'.`
+  //   console.log("content:", content);
+  //   console.log("########################################################");
+  //   return {
+  //     content: content,
+  //   };
+
+
+  //   // try {
+  //   //   const result = await fetchTecoSonicProcessData(
+  //   //     sessionId,
+  //   //     caseId,
+  //   //     processName,
+  //   //     processArguments,
+  //   //     // messagesList
+  //   //   );
+  //   //   console.log(
+  //   //     "-----------> Result from fetchTecoSonicProcessData:",
+  //   //     result
+  //   //   );
+
+  //   //   if (result.error) {
+  //   //     return { content: `Error: ${result.error}` };
+  //   //   }
+
+  //   //   console.log("########################################################");
+  //   //   return result;
+  //   // } catch (error) {
+  //   //   console.error("Error in follow_script:", error);
+  //   //   return { content: "An error occurred while processing your request." };
+  //   // }
+  // },
+
+  // check_tool_response: async (
+  //   client: NovaSonicBidirectionalStreamClient,
+  //   ws: WebSocket,
+  //   toolUseContent: any,
+  //   messagesList: string[]
+  // ) => {
+  //   console.log("==================================================================",messagesList.length);
+  //   console.log("All messages in messagesList:");
+  //   messagesList.forEach((msg, idx) => {
+  //     console.log(`[${idx}]:`, msg);
+  //   });
+
+  //   // console.log(messagesList)
+  //   // if (messagesList.length > 0) {
+  //   //   console.log(messagesList[0]);
+  //   // } else {
+  //   //   console.log("No messages in messagesList");
+  //   // }
+  //   await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  //   // let tool_response;
+  //   // if(messagesList.length > 0) {
+  //   //   tool_response = typeof messagesList[0] === "string" ? (() => {
+  //   //     try {
+  //   //       return JSON.parse(messagesList[0]);
+  //   //     } catch {
+  //   //       return { raw: messagesList[0] };
+  //   //     }
+  //   //     })() : messagesList[0]
+  //   //   }
+    
+
+  //   console.log(
+  //     "=================================================================="
+  //   );
+
+  //   return { content: messagesList.toString() };
+  //   // return {
+  //   //   content: "El asistente debe mencionar que tiene novedades o que ahora tiene más información, ya que debe transmitir la respuesta de la herramienta 'follow_script' al cliente.",
+  //   // }
+  // },
+
+  // check_function_lenta: async (
+  //   client: NovaSonicBidirectionalStreamClient,
+  //   ws: WebSocket,
+  //   toolUseContent: any,
+  //   messagesList: string[]
+  // ) => {
+  //   console.log(
+  //     "----------------> check_function_lenta called with toolUseContent:",
+  //     toolUseContent.content,
+  //     messagesList
+  //   );
+
+  //   await funcion_lenta().then(async (result) => {
+  //     await triggerSonic(
+  //       client,
+  //       ws,
+  //       toolUseContent,
+  //       "La función lenta ha terminado. ¿Necesitas algo más?"
+  //     );
+  //   });
+
+  //   return {
+  //     content: `Estoy ejecutando una función lenta que tomará un tiempo considerable. Por favor, espera un momento.`,
+  //   };
+  // },
+
+  // check_connection: async (
+  //   client: NovaSonicBidirectionalStreamClient,
+  //   ws: WebSocket,
+  //   toolUseContent: any,
+  //   messagesList: string[]
+  // ) => {
+  //   console.log(
+  //     "----------------> check_connection called with toolUseContent:",
+  //     toolUseContent.content,
+  //     messagesList
+  //   );
+  //   // setTimeout(() => {
+  //   //   const message = `He revisado el estado de tu conexión y detecté que en las últimas 24 horas
+  //   //     hubo algunos problemas al registrar tu equipo en la red. Esto podría haber afectado la
+  //   //     calidad de tu servicio. Para entender mejor lo que sucedió, voy a verificar si se registraron
+  //   //     cortes específicos que hayan podido impactar tu conexión. Antes de continuar, ¿puedo confirmar
+  //   //     que sigues ahí?`;
+  //   //   messagesList.push(message);
+  //   //   console.log(`Added message to messagesList: ${message}`);
+  //   //   setTimeout(() => {
+  //   //     triggerSonic(
+  //   //       client,
+  //   //       ws,
+  //   //       toolUseContent,
+  //   //       "Tienes mensajes para mi?"
+  //   //     );
+  //   //   }, 3000);
+  //   // }, 5000);
+
+  //   const message = `He revisado el estado de tu conexión y detecté que en las últimas 24 horas
+  //       hubo algunos problemas al registrar tu equipo en la red. Antes de continuar, ¿puedo confirmar
+  //       que sigues ahí?`;
+  //   messagesList.push(message);
+  //   console.log(`Added message to messagesList: ${message}`);
+
+  //   setTimeout(() => {
+  //     triggerSonic(
+  //       client,
+  //       ws,
+  //       toolUseContent,
+  //       "Tienes mensajes para mi?"
+  //     );
+  //   }, 3000);
+
+  //   return {
+  //     content: "Estoy revisando el estado de tu conexión en este momento.",
+  //   };
+  // },
+
+  // check_for_outage: async (
+  //   client: NovaSonicBidirectionalStreamClient,
+  //   ws: WebSocket,
+  //   toolUseContent: any,
+  //   messagesList: string[]
+  // ) => {
+  //   console.log(
+  //     "----------------> check_for_outage called with toolUseContent:",
+  //     toolUseContent.content,
+  //     messagesList
+  //   );
+  //   const { affectsAllUserDevices } = JSON.parse(toolUseContent.content);
+
+  //   if (affectsAllUserDevices) {
+  //     return {
+  //       content:
+  //         "Confirmé que hay una interrupción masiva en tu zona que está afectando tu servicio de internet. " +
+  //         "Te avisaremos cuando el servicio se restablezca. ¿Querés que te avise por SMS cuando se restablezca el servicio?",
+  //     };
+  //   } else {
+  //     functions.check_connection(client, ws, toolUseContent, messagesList);
+  //     return {
+  //       content:
+  //         "He revisado y no encontré evidencia de una interrupción en tu zona. " +
+  //         "Ahora estoy verificando si hay problemas específicos con tu conexión." +
+  //         "Por favor, espera un momento.",
+  //     };
+  //   }
+  // },
 
   get_weather: async (
     client: NovaSonicBidirectionalStreamClient,
@@ -298,7 +542,6 @@ const functions = {
       const now = new Date();
       const current_time = now.toTimeString().slice(0, 5); // "HH:MM"
       console.log("current_time:", current_time);
-      await new Promise((resolve) => setTimeout(resolve, 10000));
       return {
         current_time: current_time,
       };
@@ -307,6 +550,50 @@ const functions = {
       throw error;
     }
   },
+  // take_the_bull_by_the_horns: async (
+  //   client: NovaSonicBidirectionalStreamClient,
+  //   ws: WebSocket,
+  //   toolUseContent: any,
+  //   messagesList: string[]
+  // ) => {
+  //   try {
+
+  //     const contentObj =
+  //       typeof toolUseContent.content === "string"
+  //         ? JSON.parse(toolUseContent.content)
+  //         : toolUseContent.content;
+
+  //     const sessionId = contentObj.session_id;
+  //     const caseId = contentObj.case_id;
+  //     const processName = contentObj.name;
+  //     const processArguments = contentObj.arguments || {};
+
+  //     const result = await functions.follow_script(
+  //       client,
+  //       ws,
+  //       {
+  //         ...toolUseContent,
+  //         content: JSON.stringify({
+  //           session_id: sessionId,
+  //           case_id: caseId,
+  //           name: processName,
+  //           arguments: processArguments,
+  //         }),
+  //       },
+  //       messagesList
+  //     );
+
+  //     console.log("----------------------> take_the_bull_by_the_horns");
+  //     return {
+  //       // prompt: "El asistente detecta que no hubo actividad en la conversación, debe decidir qué hacer. El asistente puede " +
+  //       // " buscar resultados invocando a 'follow_script', informar al usuario de la situacion, o preguntar si el usuario aún esta ahí"
+  //       prompt: "El asistente debe invocar 'follow_script'"
+  //     };
+  //   } catch (error) {
+  //     console.error(`Error fetching current time data: ${error}`);
+  //     throw error;
+  //   }
+  // },
 };
 
 function parseToolsFromXML(
@@ -384,19 +671,68 @@ function parseToolsFromXML(
 }
 
 export const registeredTools = parseToolsFromXML(
+  // `
+  // <tool id="get_current_time" function="get_current_time" description="La hora actual en formato HH:MM."></tool>
+  // <tool id="get_weather" function="get_weather" description="Get the current weather for a given location, based on its WGS84 coordinates.">
+  //   <property name="latitude" type="string" required="true" description="Geographical WGS84 latitude of the location." />
+  //   <property name="longitude" type="string" required="true" description="Geographical WGS84 longitude of the location." />
+  // </tool>
+  // <tool id="follow_script" function="follow_script" description="Esta herramienta sirve para correr procesos para diagnosticar y resolver problemas de conexión a internet.">
+  //   <property name="session_id" type="string" required="true" description="The session ID for the process." />
+  //   <property name="case_id" type="string" required="true" description="The case ID for the process." />
+  //   <property name="name" type="string" required="true" description="The name of the next process to follow." />
+  //   <property name="arguments" type="object" required="true" description="Arguments for the next process." />
+  // </tool>
+  // <tool id="check_tool_response" function="check_tool_response" description="Esta herramienta sirve para obtener el resultado del ultimo proceso llamado para diagnosticar y resolver problemas de conexión a internet."/>
+  // `,
   `
-<tool id="get_current_time" function="get_current_time" description="La hora actual en formato HH:MM."></tool>
-<tool id="get_weather" function="get_weather" description="Get the current weather for a given location, based on its WGS84 coordinates.">
-  <property name="latitude" type="string" required="true" description="Geographical WGS84 latitude of the location." />
-  <property name="longitude" type="string" required="true" description="Geographical WGS84 longitude of the location." />
-</tool>
-<tool id="follow_script" function="follow_script" description="Obtener el siguiente paso de un proceso estructurado para diagnosticar y resolver problemas de conexión a internet de manera eficiente.">
-  <property name="session_id" type="string" required="true" description="The session ID for the process." />
-  <property name="case_id" type="string" required="true" description="The case ID for the process." />
-  <property name="name" type="string" required="true" description="The name of the next process to follow." />
-  <property name="arguments" type="object" required="true" description="Arguments for the next process." />
-</tool>
-`,
+  <tool id="get_current_time" function="get_current_time" description="La hora actual en formato HH:MM."></tool>
+  <tool id="get_weather" function="get_weather" description="Get the current weather for a given location, based on its WGS84 coordinates.">
+    <property name="latitude" type="string" required="true" description="Geographical WGS84 latitude of the location." />
+    <property name="longitude" type="string" required="true" description="Geographical WGS84 longitude of the location." />
+  </tool>
+  <tool id="follow_script" function="follow_script" description="Esta herramienta sirve para correr procesos para diagnosticar y resolver problemas de conexión a internet.">
+    <property name="session_id" type="string" required="true" description="El session ID para la conversación." />
+    <property name="case_id" type="string" required="true" description="El case id del proceso de resolución." />
+    <property name="name" type="string" required="true" description="El name del proceso a correr para diagnosticar o resolver el problema de conexión." />
+    <property name="arguments" type="object" required="true" description="los arguments necesarios para el proceso a correr para diagnosticar o resolver el problema de conexión." />
+  </tool>
+  `,
+  // <tool id="take_the_bull_by_the_horns" function="take_the_bull_by_the_horns" description="Cuando el asistente escucha 'Take the bull by the horns' invoka esta tool para contestar."></tool>
+  
+  // `
+  // <tool id="check_messages" function="check_messages" description="Usa esta herramienta para chequear si el cliente tiene mensajes no leídos."/>
+  // <tool id="check_connection" function="check_connection" description="Usa esta herramienta para verificar si hay un problema de conexión en el área del usuario."/>
+  // <tool id="check_for_outage" function="check_for_outage" description="Usa esta herramienta para verificar si hay un corte en el área del usuario. No asumas cuántos dispositivos están afectados sin preguntar.">
+  //   <property name="affectsAllUserDevices" type="boolean" required="true" description="Si la interrupción afecta a todos los dispositivos del usuario" />
+  // </tool>
+  // <tool id="get_current_time" function="get_current_time" description="La hora actual en formato HH:MM."></tool>
+  // <tool id="get_weather" function="get_weather" description="Get the current weather for a given location, based on its WGS84 coordinates.">
+  //   <property name="latitude" type="string" required="true" description="Geographical WGS84 latitude of the location." />
+  //   <property name="longitude" type="string" required="true" description="Geographical WGS84 longitude of the location." />
+  // </tool>
+  // <tool id="follow_script" function="follow_script" description="Esta herramienta sirve para obtener el siguiente paso de un proceso para diagnosticar y resolver problemas de conexión a internet.">
+  //   <property name="session_id" type="string" required="true" description="The session ID for the process." />
+  //   <property name="case_id" type="string" required="true" description="The case ID for the process." />
+  //   <property name="name" type="string" required="true" description="The name of the next process to follow." />
+  //   <property name="arguments" type="object" required="true" description="Arguments for the next process." />
+  // </tool>
+  // `,
+
+  //   `
+  // <tool id="get_current_time" function="get_current_time" description="La hora actual en formato HH:MM."></tool>
+  // <tool id="get_weather" function="get_weather" description="Get the current weather for a given location, based on its WGS84 coordinates.">
+  //   <property name="latitude" type="string" required="true" description="Geographical WGS84 latitude of the location." />
+  //   <property name="longitude" type="string" required="true" description="Geographical WGS84 longitude of the location." />
+  // </tool>
+  // <tool id="follow_script" function="follow_script" description="Obtener el siguiente paso de un proceso estructurado para diagnosticar y resolver problemas de conexión a internet de manera eficiente.">
+  //   <property name="session_id" type="string" required="true" description="The session ID for the process." />
+  //   <property name="case_id" type="string" required="true" description="The case ID for the process." />
+  //   <property name="name" type="string" required="true" description="The name of the next process to follow." />
+  //   <property name="arguments" type="object" required="true" description="Arguments for the next process." />
+  // </tool>
+  // `
+  // ,
   functions
 );
 
