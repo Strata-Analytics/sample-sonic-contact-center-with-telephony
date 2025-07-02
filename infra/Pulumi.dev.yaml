@@ -1,6 +1,6 @@
-encryptionsalt: v1:EC18+GsjC4M=:v1:5sxeulGmzyek0uVR:P7hpam2tV5UdH6B3MUyekzQypKtENw==
 config:
   aws:region: us-east-1
   sonic-nova-iac:myIp: 138.204.158.0/24
   sonic-nova-iac:keyPairName: teco-bot-poc-ec2-kp
   sonic-nova-iac:pathToWebsiteContents: ../src/frontend/dist
+encryptionsalt: v1:azUq1UUrxrM=:v1:jHCzxCHHB5GOBhwV:3hf+f1to9YXpaAOko/jgaLainl2Bpw==
