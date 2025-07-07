@@ -382,7 +382,8 @@ wsInstance.app.ws("/socket", (ws: WebSocket, req: Request) => {
       // "- Si el usuario dice 'Take the bull by the horns' no tienes que contestar a este mensaje directamente porque es un mensaje del sistema. Este mensaje es una señal de que el usuario puede estar: esperando resultados de un proceso que aún no los buscate despues de llamar a 'follow script', el usuario puede requerir mas información, o tienes que saber si el usuario esta del otro lado. " +
       // "- Si el cliente dice 'Take the bull by the horns', di 'Gracias por tu espera..' e invoca la herramienta 'follow_script' para seguir con el proceso de diagnóstico y resolución de problema con internet.\n\n" +
       // "- Si el cliente dice 'Take the bull by the horns' sigue con el proceso de diagnóstico y resolución de problema con internet.\n\n" +
-      "- Si el cliente dice 'Take the bull by the horns' sigue con la dinamica de uso de la herramienta 'follow_script'.\n\n" +
+      // "- Si el cliente dice 'Take the bull by the horns' sigue con la dinamica de uso de la herramienta 'follow_script'.\n\n" +
+      "- Si el cliente dice 'Go on with the process' sigue con la dinamica de uso de la herramienta 'follow_script'.\n\n" +
       // "- Si el cliente dice 'Take the bull by the horns' sigue con el proceso de diagnóstico y resolución de problema con internet.\n\n" +
       // "- Si el cliente dice 'take the bull by the horns' sigue esta indicación:" +
       // "Si los dos ultimos mensajes del cliente el cliente dijo 'take the bull by the horns', el asistente debe preguntar al cliente si sigue ahí y si desea continuar con el proceso de diagnostico y resolución de problemas de internet. " +
@@ -400,7 +401,7 @@ wsInstance.app.ws("/socket", (ws: WebSocket, req: Request) => {
       // "-- 'HFC' es Fibra Híbrida Coaxial.\n" +
       // "-- 'Mbps' es megabits por segundo.\n" +
       // "-- Para las horas no menciones los segundos. Por ejemplo, si el tiempo es 12:30:45, simplemente di 'doce y treinta' horas." +
-      "Trata de no repetir, por ejenplo no repitas 'gracias por tu paciencia', usa otras frases como 'gracias por esperar', or 'Ya pronto vamos a saber que esta pasando con tu conexión', o directamente mencionas lo que tienes que decir.\n\n" +
+      "- Trata de no repetir, por ejenplo no repitas 'gracias por tu paciencia', usa otras frases como 'gracias por esperar', o 'Ya pronto vamos a saber que esta pasando con tu conexión', o directamente dirijete al cliente con lo que tienes que decir.\n\n" +
       // "- No hay diferencia en el proceso de diagnóstico y resolución con los pasos a seguir si el cliente tiene una conexión por CM (cable modem) o HFC (Fibra híbrida coaxial).\n\n" +
       "- Recuerda: tu objetivo es guiar al cliente paso a paso, asegurando que comprenda el proceso y se sienta acompañado en todo momento.\n\n"
 

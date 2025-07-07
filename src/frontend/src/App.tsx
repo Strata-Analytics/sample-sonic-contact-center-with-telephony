@@ -256,7 +256,8 @@ const App: React.FC = () => {
       if (historyItem.role.toLowerCase() === "system") continue;
       if (
         historyItem.role.toLowerCase() === "user" &&
-        historyItem.message.trim().toLowerCase().includes("take the bull by the horns")
+        // historyItem.message.trim().toLowerCase().includes("take the bull by the horns")
+        historyItem.message.trim().toLowerCase().includes("go on with the process")
       )
         continue; // No mostrar mensajes 'take the bull by the horns' del usuario
 
@@ -677,7 +678,8 @@ const App: React.FC = () => {
         // Sumar duración estimada del audio TTS del agente + 8000ms
         const ttsMs = estimateTtsDurationMs(lastMsg.text);
         autoReplyTimerRef.current = window.setTimeout(() => {
-          handleTtsSubmit("take the bull by the horns");
+          // handleTtsSubmit("take the bull by the horns");
+          handleTtsSubmit("go on with the process");
         }, ttsMs + 3000);
       }
     }
